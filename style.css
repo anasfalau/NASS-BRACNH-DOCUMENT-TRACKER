@@ -120,6 +120,7 @@ td select{cursor:pointer}
 .mcancel:hover{background:#f4f6fa}
 .mok{padding:8px 20px;background:#003366;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;transition:background 0.15s;letter-spacing:0.03em}
 .mok:hover{background:#1a4d8f}
+.medit{padding:8px 16px;border:1px solid #003366;background:#fff;color:#003366;border-radius:5px;font-size:12px;cursor:pointer;font-weight:600;transition:background 0.15s}.medit:hover{background:#e8f0fe}
 .btn-clear{background:#5a6375;color:#fff;font-size:12px;padding:7px 13px;border-radius:4px;font-weight:600}.btn-clear:hover{background:#3d4759}
 
 /* === SUBJECT COLUMN CLICKABLE === */

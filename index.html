@@ -5,8 +5,48 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NASS Branch &mdash; Workflow Tracker</title>
 <link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+<!-- ── Loading Overlay ───────────────────────────────────────── -->
+<div id="nass-loading" style="display:flex;position:fixed;inset:0;background:linear-gradient(135deg,#002655,#004080);z-index:2000;align-items:center;justify-content:center;flex-direction:column;gap:14px">
+  <div style="width:48px;height:48px;border:3px solid rgba(255,255,255,0.2);border-top-color:#c8a400;border-radius:50%;animation:nasspin 0.8s linear infinite"></div>
+  <div style="color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">Loading…</div>
+  <style>@keyframes nasspin{to{transform:rotate(360deg)}}</style>
+</div>
+
+<!-- ── Login Modal ───────────────────────────────────────────── -->
+<div id="nass-login" style="display:none;position:fixed;inset:0;background:rgba(0,18,46,0.93);z-index:1999;align-items:center;justify-content:center;backdrop-filter:blur(6px)">
+  <div style="background:#fff;border-radius:12px;padding:38px 36px;width:400px;max-width:95vw;box-shadow:0 28px 70px rgba(0,0,0,0.45)">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:11px;font-weight:700;color:#c8a400;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:6px">Nigerian Navy Headquarters</div>
+      <div style="font-size:20px;font-weight:700;color:#1a2332;line-height:1.2">NASS Branch</div>
+      <div style="font-size:13px;color:#6b7585;margin-top:4px">Document Workflow Tracker</div>
+    </div>
+    <form id="nass-login-form">
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:10.5px;font-weight:700;color:#5a6375;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px">Email Address</label>
+        <input id="nass-email" type="email" required autocomplete="email" placeholder="your@email.com"
+          style="width:100%;padding:10px 12px;border:1px solid #c8cdd8;border-radius:6px;font-size:13px;font-family:inherit;background:#fafbfd;transition:border-color 0.15s"
+          onfocus="this.style.borderColor='#003366';this.style.boxShadow='0 0 0 3px rgba(0,51,102,0.1)'"
+          onblur="this.style.borderColor='#c8cdd8';this.style.boxShadow='none'">
+      </div>
+      <div style="margin-bottom:22px">
+        <label style="display:block;font-size:10.5px;font-weight:700;color:#5a6375;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px">Password</label>
+        <input id="nass-password" type="password" required autocomplete="current-password" placeholder="••••••••"
+          style="width:100%;padding:10px 12px;border:1px solid #c8cdd8;border-radius:6px;font-size:13px;font-family:inherit;background:#fafbfd;transition:border-color 0.15s"
+          onfocus="this.style.borderColor='#003366';this.style.boxShadow='0 0 0 3px rgba(0,51,102,0.1)'"
+          onblur="this.style.borderColor='#c8cdd8';this.style.boxShadow='none'">
+      </div>
+      <div id="nass-login-err" style="color:#d32f2f;font-size:12px;margin-bottom:12px;text-align:center;min-height:16px"></div>
+      <button id="nass-login-btn" type="submit"
+        style="width:100%;padding:11px;background:#003366;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:0.04em;transition:background 0.15s"
+        onmouseover="this.style.background='#1a4d8f'" onmouseout="this.style.background='#003366'">Sign In</button>
+    </form>
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:#9aa3b0">Access is restricted to authorised personnel only.</div>
+  </div>
+</div>
 <div class="topbar">
   <svg class="topbar-logo" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="420" height="56" viewBox="0 0 420 56" role="img" aria-label="Naval Safety and Standards Branch">
     <rect x="5" y="5" width="410" height="46" rx="5" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
@@ -22,6 +62,10 @@
   </div>
   <button class="btn btn-ghost" onclick="exportCSV()">&#8595; Export CSV</button>
   <button class="btn btn-gold"  onclick="openModal()">+ Add Record</button>
+  <div id="nass-user-wrap" style="display:none;align-items:center;gap:10px;border-left:1px solid rgba(255,255,255,0.2);margin-left:4px;padding-left:14px">
+    <span id="nass-user-email" style="font-size:11px;opacity:0.75;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+    <button class="btn btn-ghost" onclick="nassLogout()" style="font-size:11px;padding:5px 10px">Sign Out</button>
+  </div>
 </div>
 <div id="view-tracker">
   <div class="stats" id="stats"></div>
@@ -123,7 +167,7 @@
     <div class="mbr"><button class="mcancel" onclick="document.getElementById('detail-mbg').classList.remove('open')">Close</button><button class="mok" onclick="document.getElementById('detail-mbg').classList.remove('open');openModal(currentDetailIdx)">Edit</button></div>
   </div>
 </div>
-<script src="app.js"></script>
+<!-- app.js is loaded dynamically by supabase-init.js after auth -->
 <script>
 (function(){
   function initResize(){
@@ -165,5 +209,6 @@
 
 })();
 </script>
+<script src="supabase-init.js"></script>
 </body>
 </html>
