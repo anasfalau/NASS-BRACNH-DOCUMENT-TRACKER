@@ -3,7 +3,7 @@
 //  ① Paste your Project URL and anon key from:
 //     Supabase Dashboard → Settings → API
 // ================================================================
-const SUPABASE_URL     = 'https://https://sblqmpmawkogbbzzkwxt.supabase.co';
+const SUPABASE_URL     = 'https://sblqmpmawkogbbzzkwxt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNibHFtcG1hd2tvZ2Jienprd3h0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDQwMTYsImV4cCI6MjA5MTM4MDAxNn0.U5Fgn2HZ7nYizr81P2Ba2j-EEmG2MTq3zFT79d--GcM';
 
 const NASS_KEYS = [
