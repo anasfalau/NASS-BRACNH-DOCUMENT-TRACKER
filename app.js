@@ -37,7 +37,10 @@ document.getElementById('mbg').addEventListener('click',function(e){if(e.target=
 var GDRIVE_CLIENT_ID='1073280029907-0166ddlukbg2mg6mprp6hlk34l9fsj5a.apps.googleusercontent.com';
 var GDRIVE_FOLDER_ID='1prjqh7K3rQHHAsDErNT026Wq38wHCX0P';
 var _gTok=null,_gTC=null,_gTCb=null;
+var _gFileCache=null,_gFileCacheTime=0;
+var CACHE_TTL=5*60*1000; // 5 min
 
+// ── Token management ──
 function _gclient(){
   if(_gTC)return _gTC;
   if(!window.google||!window.google.accounts)return null;
@@ -49,28 +52,82 @@ function _gclient(){
   });
   return _gTC;
 }
-
 function _gwithToken(cb){
   if(_gTok){cb();return;}
   var tc=_gclient();
-  if(!tc){console.warn('[Drive] GIS not loaded yet');return;}
+  if(!tc){console.warn('[Drive] GIS not ready');return;}
   _gTCb=cb;
   tc.requestAccessToken({prompt:''});
 }
 
-async function _gsearch(subject){
-  var words=(subject||'').split(/[\s\-\:\/()\[\]]+/).filter(function(w){return w.length>4;});
-  if(!words.length)return null;
-  var kw=words[0].replace(/'/g,'');
-  var q="'"+GDRIVE_FOLDER_ID+"' in parents and mimeType='application/pdf' and name contains '"+kw+"'";
-  try{
-    var res=await fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name,webViewLink)&pageSize=5',{headers:{'Authorization':'Bearer '+_gTok}});
+// ── Fetch all PDFs from folder (cached) ──
+async function _gAllFiles(){
+  var now=Date.now();
+  if(_gFileCache&&(now-_gFileCacheTime)<CACHE_TTL)return _gFileCache;
+  var files=[],pageToken=null;
+  var base='https://www.googleapis.com/drive/v3/files';
+  var q=encodeURIComponent("'"+GDRIVE_FOLDER_ID+"' in parents and mimeType='application/pdf' and trashed=false");
+  do{
+    var url=base+'?q='+q+'&fields=nextPageToken,files(id,name,webViewLink)&pageSize=200'+(pageToken?'&pageToken='+pageToken:'');
+    var res=await fetch(url,{headers:{'Authorization':'Bearer '+_gTok}});
     if(res.status===401){_gTok=null;return null;}
     var d=await res.json();
-    return(d.files&&d.files.length)?d.files[0]:null;
-  }catch(e){return null;}
+    if(d.files)files=files.concat(d.files);
+    pageToken=d.nextPageToken;
+  }while(pageToken&&files.length<600);
+  _gFileCache=files;
+  _gFileCacheTime=now;
+  console.log('[Drive] Loaded',files.length,'PDFs from folder');
+  return files;
 }
 
+// ── Fuzzy similarity: weighted token overlap ──
+function _gScore(subject,filename){
+  function tok(s){
+    return s.toLowerCase()
+      .replace(/[^a-z0-9\s]/g,' ')
+      .split(/\s+/)
+      .filter(function(w){return w.length>2;});
+  }
+  var ta=tok((subject||'').substring(0,300));
+  var tb=tok((filename||'').replace(/\.pdf$/i,''));
+  if(!ta.length||!tb.length)return 0;
+  var setB=new Set(tb);
+  var matched=0,total=0;
+  ta.forEach(function(w){
+    // Weight longer words more heavily (they are more discriminating)
+    var wt=Math.pow(w.length,1.5);
+    total+=wt;
+    if(setB.has(w)){
+      matched+=wt; // exact word match
+    } else {
+      // Partial: check if subject word is contained in any filename word
+      var partial=false;
+      tb.forEach(function(fw){
+        if(!partial&&(fw.includes(w)||w.includes(fw))&&Math.min(w.length,fw.length)>3){
+          matched+=wt*0.4;partial=true;
+        }
+      });
+    }
+  });
+  return total>0?matched/total:0;
+}
+
+// ── Find best match across all files ──
+async function _gsearch(subject){
+  var files=await _gAllFiles();
+  if(!files||!files.length)return null;
+  var best=null,bestScore=0;
+  var THRESHOLD=0.12;
+  files.forEach(function(f){
+    var s=_gScore(subject,f.name);
+    if(s>bestScore){bestScore=s;best=f;}
+  });
+  console.log('[Drive] Best:',best?best.name:'none','score:',bestScore.toFixed(3));
+  return bestScore>=THRESHOLD?best:null;
+}
+
+// ── UI orchestration ──
 function gdriveSearchForRecord(subject){
   var panel=document.getElementById('d-pdf-panel');
   var loading=document.getElementById('d-pdf-loading');
@@ -80,7 +137,7 @@ function gdriveSearchForRecord(subject){
   var mbox=document.querySelector('.detail-mbox');
   if(!panel)return;
   panel.style.display='flex';
-  if(loading)loading.style.display='block';
+  if(loading)loading.style.display='flex';
   if(frame){frame.src='';frame.style.display='none';}
   if(titleEl)titleEl.textContent='';
   if(mbox)mbox.classList.add('detail-has-pdf');
