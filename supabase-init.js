@@ -1,15 +1,13 @@
 // ================================================================
 //  NASS Branch Tracker — Supabase Integration Layer
-//  ① Paste your Project URL and anon key from:
-//     Supabase Dashboard → Settings → API
 // ================================================================
-const SUPABASE_URL     = 'https://sblqmpmawkogbbzzkwxt.supabase.co';
+const SUPABASE_URL      = 'https://sblqmpmawkogbbzzkwxt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNibHFtcG1hd2tvZ2Jienprd3h0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDQwMTYsImV4cCI6MjA5MTM4MDAxNn0.U5Fgn2HZ7nYizr81P2Ba2j-EEmG2MTq3zFT79d--GcM';
 
-const NASS_KEYS = [
-  'nassRows', 'nassOfficers', 'nassStatuses',
-  'nassLocations', 'nassActions', 'nassFileIndex'
-];
+const CONFIG_KEYS = ['nassOfficers', 'nassStatuses', 'nassLocations', 'nassActions', 'nassFileIndex'];
+
+// Parallel array to `rows` — stores the Supabase UUID for each record.
+var rowIds = [];
 
 // ── Bootstrap ──────────────────────────────────────────────────
 (async function init() {
@@ -25,45 +23,69 @@ const NASS_KEYS = [
     return;
   }
 
-  // ── Authenticated: pull data then boot app ──────────────────
+  // Pull latest data from Supabase, then load app
   await pullData(sb);
   await loadScript('app.js');
 
-  // ── Shared broadcast channel (free tier — no DB replication needed) ──
-  // All connected clients join this channel. When any user saves,
-  // they broadcast a 'data-changed' signal. Every other client
-  // receives it, pulls fresh data, and re-renders if no modal is open.
-  const nassChannel = sb.channel('nass-broadcast', {
-    config: { broadcast: { self: false } }   // don't echo back to the sender
-  });
+  // Sync rowIds with current rows
+  rowIds = JSON.parse(localStorage.getItem('nassRowIds') || '[]');
+  while (rowIds.length < rows.length) rowIds.push(null);
 
-  nassChannel
-    .on('broadcast', { event: 'data-changed' }, async function () {
-      await pullData(sb);
-      if (typeof loadData === 'function') loadData();
+  // Proxy rows so push/splice keep rowIds aligned automatically
+  applyRowsProxy();
 
-      const editModal   = document.getElementById('mbg');
-      const detailModal = document.getElementById('detail-mbg');
-      const anyModalOpen =
-        (editModal   && editModal.classList.contains('open')) ||
-        (detailModal && detailModal.classList.contains('open'));
-      if (!anyModalOpen && typeof refresh === 'function') refresh();
-    })
-    .subscribe();
-
-  // Wrap saveData so every write syncs to Supabase then notifies peers
-  const _origSave = window.saveData;
-  window.saveData = async function () {
-    _origSave();                  // writes to localStorage (synchronous)
-    await pushData(sb);           // syncs to Supabase
-    nassChannel.send({            // notify all other open sessions instantly
-      type: 'broadcast',
-      event: 'data-changed',
-      payload: {}
-    });
+  // Wrap loadData to re-proxy rows after each reload from localStorage
+  const _origLoad = loadData;
+  loadData = function () {
+    _origLoad();
+    rowIds = JSON.parse(localStorage.getItem('nassRowIds') || '[]');
+    applyRowsProxy();
   };
 
-  // Show user info in topbar and reveal the app
+  // ── Broadcast channel ─────────────────────────────────────────
+  // IMPORTANT: subscribe() is awaited so the websocket is confirmed
+  // open before we ever call nassChannel.send().
+  const nassChannel = sb.channel('nass-broadcast', {
+    config: { broadcast: { self: false } }
+  });
+
+  nassChannel.on('broadcast', { event: 'data-changed' }, async function () {
+    await pullData(sb);
+    if (typeof loadData === 'function') loadData();
+    if (!isModalOpen() && typeof refresh === 'function') refresh();
+  });
+
+  // Wait for the websocket to be confirmed SUBSCRIBED before continuing
+  await new Promise((resolve) => {
+    nassChannel.subscribe((status) => {
+      console.log('[NASS] Channel:', status);
+      if (status === 'SUBSCRIBED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        resolve();
+      }
+    });
+  });
+
+  // Wrap saveData: write to localStorage → push to Supabase → notify peers
+  const _origSave = window.saveData;
+  window.saveData = async function () {
+    _origSave();                  // synchronous localStorage write
+    await pushData(sb);           // push to Supabase (awaited so errors surface)
+    try {
+      await nassChannel.send({ type: 'broadcast', event: 'data-changed', payload: {} });
+    } catch (e) {
+      console.warn('[NASS] Broadcast send failed:', e);
+    }
+  };
+
+  // Re-sync when the user returns to this browser tab
+  document.addEventListener('visibilitychange', async function () {
+    if (document.visibilityState !== 'visible') return;
+    await pullData(sb);
+    if (typeof loadData === 'function') loadData();
+    if (!isModalOpen() && typeof refresh === 'function') refresh();
+  });
+
+  // Show topbar user info and reveal the app
   const userEl = document.getElementById('nass-user-email');
   if (userEl) userEl.textContent = session.user.email;
   show('nass-user-wrap');
@@ -71,30 +93,211 @@ const NASS_KEYS = [
 
 })();
 
-// ── Supabase data helpers ───────────────────────────────────────
-async function pullData(sb) {
-  const { data, error } = await sb.from('nass_settings').select('key, value');
-  if (error) { console.error('[NASS] Pull error:', error); return; }
-  (data || []).forEach(({ key, value }) =>
-    localStorage.setItem(key, JSON.stringify(value))
-  );
+// ── Proxy helper ────────────────────────────────────────────────
+function applyRowsProxy() {
+  rows = new Proxy(rows, {
+    get(target, prop) {
+      if (prop === 'push') {
+        return function (...items) {
+          items.forEach(() => rowIds.push(null));
+          localStorage.setItem('nassRowIds', JSON.stringify(rowIds));
+          return Array.prototype.push.apply(target, items);
+        };
+      }
+      if (prop === 'splice') {
+        return function (start, deleteCount, ...items) {
+          rowIds.splice(start, deleteCount, ...new Array(items.length).fill(null));
+          localStorage.setItem('nassRowIds', JSON.stringify(rowIds));
+          return Array.prototype.splice.call(target, start, deleteCount, ...items);
+        };
+      }
+      return Reflect.get(target, prop);
+    },
+    set(target, prop, value) {
+      return Reflect.set(target, prop, value);
+    }
+  });
 }
 
-async function pushData(sb) {
-  const payload = NASS_KEYS
-    .map(key => {
-      const raw = localStorage.getItem(key);
-      if (raw === null) return null;
-      try { return { key, value: JSON.parse(raw) }; }
-      catch (e) { return null; }
-    })
-    .filter(Boolean);
+// ── Modal state helper ──────────────────────────────────────────
+function isModalOpen() {
+  const edit   = document.getElementById('mbg');
+  const detail = document.getElementById('detail-mbg');
+  return (edit   && edit.classList.contains('open')) ||
+         (detail && detail.classList.contains('open'));
+}
 
-  if (!payload.length) return;
-  const { error } = await sb
+// ── pullData ────────────────────────────────────────────────────
+// Fetch all records from nass_records + config from nass_settings
+// into localStorage. On first run (empty table), migrates from the
+// old nass_settings blob automatically.
+async function pullData(sb) {
+  const { data: records, error: recErr } = await sb
+    .from('nass_records')
+    .select('*')
+    .order('sort_order', { ascending: true });
+
+  if (recErr) {
+    console.error('[NASS] Pull error:', recErr.message);
+  } else if (records.length > 0) {
+    const newRows = records.map(rec => [
+      '',
+      rec.file_ref      || '',
+      rec.subject       || '',
+      rec.location      || '',
+      rec.officer       || '',
+      rec.last_action   || '',
+      rec.date_received || '',
+      rec.date_moved    || '',
+      rec.sla           || '',
+      rec.due_date      || '',
+      rec.status        || 'Active',
+      rec.delay_flag    || 'ON TIME',
+      rec.remarks       || '',
+      rec.updated_by    || '',   // [13] audit
+      rec.updated_at    || ''    // [14] audit
+    ]);
+    localStorage.setItem('nassRows',   JSON.stringify(newRows));
+    localStorage.setItem('nassRowIds', JSON.stringify(records.map(r => r.id)));
+  } else {
+    await migrateFromSettings(sb);
+  }
+
+  // Fetch config lists
+  const { data: settings } = await sb
     .from('nass_settings')
-    .upsert(payload, { onConflict: 'key' });
-  if (error) console.error('[NASS] Push error:', error);
+    .select('key, value');
+  (settings || [])
+    .filter(({ key }) => CONFIG_KEYS.includes(key))
+    .forEach(({ key, value }) => localStorage.setItem(key, JSON.stringify(value)));
+}
+
+// ── migrateFromSettings ─────────────────────────────────────────
+// One-time: copy existing nassRows blob → individual nass_records rows.
+async function migrateFromSettings(sb) {
+  const { data, error } = await sb
+    .from('nass_settings')
+    .select('value')
+    .eq('key', 'nassRows')
+    .maybeSingle();
+
+  if (error || !data?.value?.length) return;
+
+  const inserts = data.value.map((r, i) => ({
+    sort_order: i,
+    file_ref:      r[1]  || '',
+    subject:       r[2]  || '',
+    location:      r[3]  || '',
+    officer:       r[4]  || '',
+    last_action:   r[5]  || '',
+    date_received: r[6]  || '',
+    date_moved:    r[7]  || '',
+    sla:           r[8]  || '',
+    due_date:      r[9]  || '',
+    status:        r[10] || 'Active',
+    delay_flag:    r[11] || 'ON TIME',
+    remarks:       r[12] || ''
+  }));
+
+  const { data: inserted, error: insErr } = await sb
+    .from('nass_records')
+    .insert(inserts)
+    .select('id, sort_order');
+
+  if (insErr) { console.error('[NASS] Migration error:', insErr.message); return; }
+
+  const ids      = [...inserted].sort((a, b) => a.sort_order - b.sort_order).map(r => r.id);
+  const newRows  = data.value.map(r => [...r.slice(0, 13), '', '']);
+  localStorage.setItem('nassRows',   JSON.stringify(newRows));
+  localStorage.setItem('nassRowIds', JSON.stringify(ids));
+  console.log('[NASS] Migrated', inserts.length, 'records.');
+}
+
+// ── pushData ────────────────────────────────────────────────────
+// Persist current rows to Supabase.
+//   • New records (no UUID)  → INSERT  → UUID written back to rowIds
+//   • Existing records (UUID) → UPSERT  → fields updated in place
+//   • Orphaned records        → DELETE  → rows removed from DB
+async function pushData(sb) {
+  const { data: { session } } = await sb.auth.getSession();
+  const userEmail = session?.user?.email || 'unknown';
+  const now       = new Date().toISOString();
+  const curRows   = JSON.parse(localStorage.getItem('nassRows') || '[]');
+
+  const toInsert = [];  // { index, rec }
+  const toUpsert = [];  // rec (has id)
+
+  curRows.forEach((r, i) => {
+    const rec = {
+      sort_order:    i,
+      file_ref:      r[1]  || '',
+      subject:       r[2]  || '',
+      location:      r[3]  || '',
+      officer:       r[4]  || '',
+      last_action:   r[5]  || '',
+      date_received: r[6]  || '',
+      date_moved:    r[7]  || '',
+      sla:           r[8]  || '',
+      due_date:      r[9]  || '',
+      status:        r[10] || 'Active',
+      delay_flag:    r[11] || 'ON TIME',
+      remarks:       r[12] || '',
+      updated_by:    userEmail,
+      updated_at:    now
+    };
+    if (rowIds[i]) {
+      toUpsert.push({ ...rec, id: rowIds[i] });
+    } else {
+      toInsert.push({ index: i, rec });
+    }
+  });
+
+  // INSERT new records and capture their UUIDs
+  if (toInsert.length) {
+    const { data: ins, error: insErr } = await sb
+      .from('nass_records')
+      .insert(toInsert.map(x => x.rec))
+      .select('id, sort_order');
+    if (insErr) {
+      console.error('[NASS] Insert error:', insErr.message);
+    } else if (ins) {
+      ins.forEach(rec => { rowIds[rec.sort_order] = rec.id; });
+    }
+  }
+
+  // UPSERT existing records
+  if (toUpsert.length) {
+    const { error: upErr } = await sb
+      .from('nass_records')
+      .upsert(toUpsert, { onConflict: 'id' });
+    if (upErr) console.error('[NASS] Upsert error:', upErr.message);
+  }
+
+  // Save updated rowIds (with newly assigned UUIDs)
+  localStorage.setItem('nassRowIds', JSON.stringify(rowIds));
+
+  // DELETE orphaned records (rows deleted locally but still in DB)
+  const liveIds = new Set(rowIds.filter(Boolean));
+  const { data: allRecs } = await sb.from('nass_records').select('id');
+  const orphans = (allRecs || []).map(r => r.id).filter(id => !liveIds.has(id));
+  if (orphans.length) {
+    const { error: delErr } = await sb.from('nass_records').delete().in('id', orphans);
+    if (delErr) console.error('[NASS] Delete error:', delErr.message);
+  }
+
+  // Push config lists to nass_settings
+  const payload = CONFIG_KEYS.map(key => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    try { return { key, value: JSON.parse(raw) }; } catch (e) { return null; }
+  }).filter(Boolean);
+
+  if (payload.length) {
+    const { error: cfgErr } = await sb
+      .from('nass_settings')
+      .upsert(payload, { onConflict: 'key' });
+    if (cfgErr) console.error('[NASS] Config push error:', cfgErr.message);
+  }
 }
 
 // ── Auth helpers ────────────────────────────────────────────────
@@ -107,11 +310,9 @@ function bindLoginForm(sb) {
       const errEl    = document.getElementById('nass-login-err');
       const btn      = document.getElementById('nass-login-btn');
       errEl.textContent = '';
-      btn.disabled     = true;
-      btn.textContent  = 'Signing in…';
-
+      btn.disabled    = true;
+      btn.textContent = 'Signing in…';
       const { error } = await sb.auth.signInWithPassword({ email, password });
-
       if (error) {
         errEl.textContent = error.message;
         btn.disabled    = false;
@@ -127,14 +328,8 @@ function nassLogout() {
 }
 
 // ── DOM helpers ─────────────────────────────────────────────────
-function show(id) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = 'flex';
-}
-function hide(id) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = 'none';
-}
+function show(id) { const el = document.getElementById(id); if (el) el.style.display = 'flex'; }
+function hide(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
