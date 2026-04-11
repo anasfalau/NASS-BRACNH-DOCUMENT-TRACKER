@@ -110,12 +110,13 @@ async function _gCandidates(subject, fileref){
   var queries=subjectWords.concat(refChunks).slice(0,4);
   if(!queries.length)return[];
 
+  console.log('[Drive] Querying with terms:',queries);
   var seen=new Map();
   for(var i=0;i<queries.length;i++){
     var kw=queries[i].replace(/'/g,'');
     var q="'"+GDRIVE_FOLDER_ID+"' in parents and mimeType='application/pdf' and trashed=false and name contains '"+kw+"'";
     try{
-      var res=await fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name,webViewLink)&pageSize=20',{headers:{'Authorization':'Bearer '+_gTok}});
+      var res=await fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name,webViewLink)&pageSize=20&supportsAllDrives=true&includeItemsFromAllDrives=true',{headers:{'Authorization':'Bearer '+_gTok}});
       if(res.status===401){_gTok=null;return null;}
       var d=await res.json();
       (d.files||[]).forEach(function(f){seen.set(f.id,f);});
@@ -124,8 +125,20 @@ async function _gCandidates(subject, fileref){
   return Array.from(seen.values());
 }
 
+// ── One-time folder reachability check ──
+var _gFolderChecked=false;
+async function _gCheckFolder(){
+  if(_gFolderChecked)return;
+  _gFolderChecked=true;
+  var q=encodeURIComponent("'"+GDRIVE_FOLDER_ID+"' in parents and trashed=false");
+  var res=await fetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id,name,mimeType)&pageSize=5&supportsAllDrives=true&includeItemsFromAllDrives=true',{headers:{'Authorization':'Bearer '+_gTok}});
+  var d=await res.json();
+  console.log('[Drive] Folder probe — status:',res.status,'files found:',d.files?d.files.length:0,d.files?d.files.map(function(f){return f.name;}):d);
+}
+
 // ── Find best matching PDF ──
 async function _gsearch(subject, fileref){
+  await _gCheckFolder();
   var candidates=await _gCandidates(subject, fileref);
   if(!candidates||!candidates.length){
     console.log('[Drive] No candidates found for:',subject.substring(0,60));
