@@ -29,18 +29,46 @@ const NASS_KEYS = [
   await pullData(sb);
   await loadScript('app.js');
 
-  // Wrap saveData so every write also syncs to Supabase
+  // ── Shared broadcast channel (free tier — no DB replication needed) ──
+  // All connected clients join this channel. When any user saves,
+  // they broadcast a 'data-changed' signal. Every other client
+  // receives it, pulls fresh data, and re-renders if no modal is open.
+  const nassChannel = sb.channel('nass-broadcast', {
+    config: { broadcast: { self: false } }   // don't echo back to the sender
+  });
+
+  nassChannel
+    .on('broadcast', { event: 'data-changed' }, async function () {
+      await pullData(sb);
+      if (typeof loadData === 'function') loadData();
+
+      const editModal   = document.getElementById('mbg');
+      const detailModal = document.getElementById('detail-mbg');
+      const anyModalOpen =
+        (editModal   && editModal.classList.contains('open')) ||
+        (detailModal && detailModal.classList.contains('open'));
+      if (!anyModalOpen && typeof refresh === 'function') refresh();
+    })
+    .subscribe();
+
+  // Wrap saveData so every write syncs to Supabase then notifies peers
   const _origSave = window.saveData;
-  window.saveData = function () {
-    _origSave();          // writes to localStorage (synchronous)
-    pushData(sb);         // syncs to Supabase   (async / background)
+  window.saveData = async function () {
+    _origSave();                  // writes to localStorage (synchronous)
+    await pushData(sb);           // syncs to Supabase
+    nassChannel.send({            // notify all other open sessions instantly
+      type: 'broadcast',
+      event: 'data-changed',
+      payload: {}
+    });
   };
 
-  // Show user info in topbar
+  // Show user info in topbar and reveal the app
   const userEl = document.getElementById('nass-user-email');
   if (userEl) userEl.textContent = session.user.email;
   show('nass-user-wrap');
   hide('nass-loading');
+
 })();
 
 // ── Supabase data helpers ───────────────────────────────────────
