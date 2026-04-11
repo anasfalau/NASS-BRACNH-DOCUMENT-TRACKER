@@ -6,6 +6,7 @@
 <title>NASS Branch &mdash; Workflow Tracker</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -144,7 +145,7 @@
 </div>
 <!-- Detail View Modal -->
 <div class="mbg" id="detail-mbg" onclick="if(event.target===this)this.classList.remove('open')">
-  <div class="mbox detail-mbox">
+  <div class="mbox detail-mbox"><div class="detail-left">
     <div class="detail-header">
       <div class="detail-header-main">
         <div class="detail-ref" id="d-ref"></div>
@@ -168,6 +169,16 @@
     <div class="detail-field detail-remarks-field"><span class="detail-label">Remarks</span><span class="detail-value" id="d-rem"></span></div>
     <div class="detail-audit"><span class="detail-audit-label">Last saved by:</span><span id="d-updated-by">—</span>&nbsp;&nbsp;<span class="detail-audit-label">at</span>&nbsp;<span id="d-updated-at">—</span></div>
     <div class="mbr"><button class="mcancel" onclick="document.getElementById('detail-mbg').classList.remove('open')">Close</button><button class="mok" onclick="document.getElementById('detail-mbg').classList.remove('open');openModal(currentDetailIdx)">Edit</button></div>
+    </div><!-- /.detail-left -->
+    <div class="detail-right" id="d-pdf-panel" style="display:none">
+      <div class="pdf-panel-header">
+        <span class="pdf-panel-label">MATCHED DOCUMENT</span>
+        <a id="d-pdf-open" href="#" target="_blank" class="pdf-open-link" title="Open in Google Drive">Open in Drive &#8599;</a>
+      </div>
+      <div id="d-pdf-title-bar"><span id="d-pdf-title"></span></div>
+      <div id="d-pdf-loading">Searching Drive&hellip;</div>
+      <iframe id="d-pdf-frame" src="" frameborder="0" allowfullscreen></iframe>
+    </div><!-- /.detail-right -->
   </div>
 </div>
 <!-- app.js is loaded dynamically by supabase-init.js after auth -->

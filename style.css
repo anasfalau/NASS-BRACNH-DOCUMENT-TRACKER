@@ -164,3 +164,15 @@ th{position:relative}
 .pg-btn:disabled{opacity:.4;cursor:default}
 .pg-btn.pg-active{background:#1a3c6e;border-color:#1a3c6e;color:#fff;font-weight:700}
 .pg-arrow{min-width:70px;font-size:12px;gap:4px}
+
+/* === GOOGLE DRIVE SPLIT PANEL === */
+.detail-mbox.detail-has-pdf{width:92vw;max-width:1300px;max-height:92vh;display:flex;flex-direction:row;gap:0;overflow:hidden;padding:0}
+.detail-left{flex:0 0 420px;min-width:320px;padding:26px;overflow-y:auto;border-right:1px solid #eef1f6}
+.detail-right{flex:1;display:flex;flex-direction:column;min-width:0;background:#f7f8fc}
+.pdf-panel-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#1a3c6e;color:#fff;gap:10px;flex-shrink:0}
+.pdf-panel-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;opacity:0.8}
+.pdf-open-link{font-size:12px;color:#ffd966;text-decoration:none;font-weight:600;white-space:nowrap}
+.pdf-open-link:hover{text-decoration:underline}
+#d-pdf-title-bar{padding:8px 14px;font-size:12px;font-weight:600;color:#1a2332;background:#eef1f6;border-bottom:1px solid #dde2ec;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+#d-pdf-loading{display:flex;align-items:center;justify-content:center;flex:1;font-size:13px;color:#6b7585;font-style:italic}
+#d-pdf-frame{flex:1;width:100%;border:none;min-height:0}
