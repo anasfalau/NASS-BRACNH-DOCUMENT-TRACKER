@@ -59,17 +59,33 @@ function _gwithToken(cb){
 }
 
 // ── Stop words to ignore when picking search terms ──
-var _gStop=new Set(['that','this','with','from','have','will','been','were','they','their','which','when','what','where','also','more','into','some','than','then','there','these','those','after','about','other','your','each','such','over','both','during','before','between','should','could','would','shall','must','being','having','making','taking','request','order','ensure','conduct','first','second','third','within','under','above','following','regard','subject','letter','dated','naval','headquarters','branch','navy','nigerian','officer','command','approval']);
+var _gStop=new Set(['that','this','with','from','have','will','been','were','they','their','which','when','what','where','also','more','into','some','than','then','there','these','those','after','about','other','your','each','such','over','both','during','before','between','should','could','would','shall','must','being','having','making','taking','request','order','ensure','conduct','first','second','third','within','under','above','following','regard','subject','letter','dated','naval','headquarters','branch','navy','nigerian','officer','command','approval','international','assessment','assessments','establishment','establishments','infrastructure','environmental','management','conference','compliance','standardisation','production','presentation','inspection','invitation','attend','place','work']);
 
 // ── Pick the N most distinctive words from a text ──
+// Strategy: if mixed-case text, uppercase words (acronyms/proper nouns) come first.
+// If all-caps text, sort by length. Both skip stop words.
 function _gDistinct(text, n){
-  return (text||'').toLowerCase()
-    .replace(/[^a-z0-9\s]/g,' ')
-    .split(/\s+/)
-    .filter(function(w){return w.length>4 && !_gStop.has(w);})
-    .sort(function(a,b){return b.length-a.length;}) // longer = more specific
-    .filter(function(w,i,a){return a.indexOf(w)===i;}) // dedupe
-    .slice(0,n);
+  var raw=text||'';
+  // Detect all-caps subject (military style)
+  var upCt=(raw.match(/[A-Z]/g)||[]).length;
+  var loCt=(raw.match(/[a-z]/g)||[]).length;
+  var allCaps=upCt>loCt*2;
+  var seen=new Set(),words=[];
+  function add(w){if(w.length>2&&!_gStop.has(w)&&!seen.has(w)){seen.add(w);words.push(w);}}
+  if(!allCaps){
+    // Mixed-case: prioritise acronyms/proper nouns (originally uppercase)
+    (raw.match(/\b[A-Z]{2,}\b/g)||[]).forEach(function(w){add(w.toLowerCase());});
+    // Then supplement with long words
+    raw.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/)
+      .filter(function(w){return w.length>5;}).forEach(add);
+  } else {
+    // All-caps: sort by length
+    raw.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/)
+      .filter(function(w){return w.length>4;})
+      .sort(function(a,b){return b.length-a.length;})
+      .forEach(add);
+  }
+  return words.slice(0,n);
 }
 
 // ── Score a filename against a subject (0–1) ──
