@@ -59,47 +59,45 @@ function _gwithToken(cb){
 }
 
 // ── Stop words to ignore when picking search terms ──
-var _gStop=new Set(['that','this','with','from','have','will','been','were','they','their','which','when','what','where','also','more','into','some','than','then','there','these','those','after','about','other','your','each','such','over','both','during','before','between','should','could','would','shall','must','being','having','making','taking','request','order','ensure','conduct','first','second','third','within','under','above','following','regard','subject','letter','dated','naval','headquarters','branch','navy','nigerian','officer','command','approval','international','assessment','assessments','establishment','establishments','infrastructure','environmental','management','conference','compliance','standardisation','production','presentation','inspection','invitation','attend','place','work']);
+var _gStop=new Set(['that','this','with','from','have','will','been','were','they','their','which','when','what','where','also','more','into','some','than','then','there','these','those','after','about','other','your','each','such','over','both','during','before','between','should','could','would','shall','must','being','having','making','taking','request','order','ensure','conduct','first','second','third','within','under','above','following','regard','subject','letter','dated','naval','headquarters','branch','navy','nigerian','officer','command','approval','international','assessment','assessments','establishment','establishments','infrastructure','environmental','management','conference','compliance','standardisation','production','presentation','inspection','invitation','attend','place','work','safety','report','executive','evaluation','annual','facilities','office','purchase','senior','retired','exercise','general','quarter','systems','standard','standards','equipment','items','funds','review','summary','activities','information','operations','random','hazards','joint','video','audit','ships']);
 
 // ── Pick the N most distinctive words from a text ──
-// Strategy: if mixed-case text, uppercase words (acronyms/proper nouns) come first.
-// If all-caps text, sort by length. Both skip stop words.
-function _gDistinct(text, n){
+// Returns [{w, acronym}] — acronym=true when word was uppercase in a mixed-case subject.
+function _gDistinct(text,n){
   var raw=text||'';
-  // Detect all-caps subject (military style)
   var upCt=(raw.match(/[A-Z]/g)||[]).length;
   var loCt=(raw.match(/[a-z]/g)||[]).length;
   var allCaps=upCt>loCt*2;
   var seen=new Set(),words=[];
-  function add(w){if(w.length>2&&!_gStop.has(w)&&!seen.has(w)){seen.add(w);words.push(w);}}
+  function add(w,acr){if(w.length>2&&!_gStop.has(w)&&!seen.has(w)){seen.add(w);words.push({w:w,acronym:acr});}}
   if(!allCaps){
-    // Mixed-case: prioritise acronyms/proper nouns (originally uppercase)
-    (raw.match(/\b[A-Z]{2,}\b/g)||[]).forEach(function(w){add(w.toLowerCase());});
-    // Then supplement with long words
+    (raw.match(/\b[A-Z]{2,}\b/g)||[]).forEach(function(w){add(w.toLowerCase(),true);});
     raw.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/)
-      .filter(function(w){return w.length>5;}).forEach(add);
-  } else {
-    // All-caps: sort by length
+      .filter(function(w){return w.length>4;}).forEach(function(w){add(w,false);});
+  }else{
     raw.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/)
       .filter(function(w){return w.length>4;})
       .sort(function(a,b){return b.length-a.length;})
-      .forEach(add);
+      .forEach(function(w){add(w,false);});
   }
   return words.slice(0,n);
 }
 
 // ── Score a filename against a subject (0–1) ──
-function _gScore(subject, filename){
-  var ta=_gDistinct(subject,10);
-  var fname=filename.toLowerCase().replace(/\.pdf$/i,'');
-  if(!ta.length)return 0;
-  var matched=0;
-  ta.forEach(function(w){
-    if(fname.includes(w)) matched+=w.length;        // full match
-    else if(fname.includes(w.slice(0,5))) matched+=w.length*0.4; // prefix match
+// True acronyms (uppercase in mixed-case text) get 2.5x weight bonus — highly specific.
+function _gScore(subject,filename){
+  var terms=_gDistinct(subject,10);
+  var fname=filename.toLowerCase().replace(/\.pdf$/i,'').replace(/[^a-z0-9\s]/g,' ');
+  if(!terms.length)return 0;
+  var score=0,maxPossible=0;
+  terms.forEach(function(t){
+    var boost=t.acronym?2.5:1.0;
+    var wt=t.w.length*boost;
+    maxPossible+=wt;
+    if(fname.includes(t.w))score+=wt;
+    else if(fname.includes(t.w.slice(0,5)))score+=wt*0.4;
   });
-  var maxPossible=ta.reduce(function(s,w){return s+w.length;},0);
-  return maxPossible>0?matched/maxPossible:0;
+  return maxPossible>0?score/maxPossible:0;
 }
 
 // ── Fetch candidates from Drive using targeted keyword queries ──
