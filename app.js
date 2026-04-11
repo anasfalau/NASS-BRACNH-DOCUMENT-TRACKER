@@ -35,7 +35,7 @@ document.getElementById('mbg').addEventListener('click',function(e){if(e.target=
 
 // ── Google Drive PDF Integration ──────────────────────────────
 var GDRIVE_CLIENT_ID='1073280029907-0166ddlukbg2mg6mprp6hlk34l9fsj5a.apps.googleusercontent.com';
-var GDRIVE_FOLDER_ID='1prjqh7K3rQHHAsDErNT026Wq38wHCX0P';
+var GDRIVE_FOLDER_ID='1aIq34zv9PNbV--h7xPC1r_p8_uZ6VjSk'; // Documents/2026 CNASS OUTGOING SCANNED DOCUMENTS
 var _gTok=null,_gTC=null,_gTCb=null;
 
 // ── Token client ──
