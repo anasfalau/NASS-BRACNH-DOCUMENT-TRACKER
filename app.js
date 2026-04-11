@@ -114,13 +114,19 @@ async function _gCandidates(subject, fileref){
   var seen=new Map();
   for(var i=0;i<queries.length;i++){
     var kw=queries[i].replace(/'/g,'');
-    var q="'"+GDRIVE_FOLDER_ID+"' in parents and mimeType='application/pdf' and trashed=false and name contains '"+kw+"'";
+    // Try fullText contains first (searches OCR content inside PDFs), then name contains
+    var base="'"+GDRIVE_FOLDER_ID+"' in parents and mimeType='application/pdf' and trashed=false";
+    var qFull=base+" and fullText contains '"+kw+"'";
+    var qName=base+" and name contains '"+kw+"'";
     try{
-      var res=await fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name,webViewLink)&pageSize=20&supportsAllDrives=true&includeItemsFromAllDrives=true',{headers:{'Authorization':'Bearer '+_gTok}});
-      if(res.status===401){_gTok=null;return null;}
-      var d=await res.json();
-      (d.files||[]).forEach(function(f){seen.set(f.id,f);});
-    }catch(e){}
+      for(var qi=0;qi<2;qi++){
+        var q2=qi===0?qFull:qName;
+        var res=await fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q2)+'&fields=files(id,name,webViewLink)&pageSize=20&supportsAllDrives=true&includeItemsFromAllDrives=true',{headers:{'Authorization':'Bearer '+_gTok}});
+        if(res.status===401){_gTok=null;return null;}
+        var d=await res.json();
+        (d.files||[]).forEach(function(f){seen.set(f.id,f);});
+      }
+    }catch(e){console.warn('[Drive] Query error:',e);}
   }
   return Array.from(seen.values());
 }
@@ -133,7 +139,10 @@ async function _gCheckFolder(){
   var q=encodeURIComponent("'"+GDRIVE_FOLDER_ID+"' in parents and trashed=false");
   var res=await fetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id,name,mimeType)&pageSize=5&supportsAllDrives=true&includeItemsFromAllDrives=true',{headers:{'Authorization':'Bearer '+_gTok}});
   var d=await res.json();
-  console.log('[Drive] Folder probe — status:',res.status,'files found:',d.files?d.files.length:0,d.files?d.files.map(function(f){return f.name;}):d);
+  var names=d.files?d.files.map(function(f){return f.name;}):[];
+  console.log('[Drive] Folder probe — status:',res.status,' files found:',names.length);
+  names.forEach(function(n,i){console.log('  ['+i+']',n);});
+  if(d.error)console.error('[Drive] Folder error:',d.error);
 }
 
 // ── Find best matching PDF ──
