@@ -157,3 +157,10 @@ th{position:relative}
 /* === AUDIT TRAIL ROW === */
 .detail-audit{font-size:11px;color:#9aa3b0;padding:6px 0 2px;border-top:1px solid #edf0f5;margin-top:6px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 .detail-audit-label{font-weight:600;letter-spacing:0.04em;text-transform:uppercase;font-size:10px}
+
+/* === PAGINATION === */
+.pg-btn{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:30px;padding:0 8px;border:1px solid #d0d5df;border-radius:5px;background:#fff;color:#3a4560;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s,border-color .15s}
+.pg-btn:hover:not(:disabled){background:#f0f4ff;border-color:#3a7bd5}
+.pg-btn:disabled{opacity:.4;cursor:default}
+.pg-btn.pg-active{background:#1a3c6e;border-color:#1a3c6e;color:#fff;font-weight:700}
+.pg-arrow{min-width:70px;font-size:12px;gap:4px}
