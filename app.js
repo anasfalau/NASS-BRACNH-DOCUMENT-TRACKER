@@ -22,7 +22,7 @@ function populateOfficerFilter(){var sel=document.getElementById('f-officer'),cu
 function doSort(col){var ths=document.querySelectorAll('thead th');if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true;}ths.forEach(function(t){t.classList.remove('sa','sd');});ths[col+1].classList.add(sortAsc?'sa':'sd');applyFilter();}
 function fillModalLists(){function pop(id,list){var el=document.getElementById(id);el.innerHTML='<option value="">— Select —</option>';list.forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o);});}pop('m-loc',locations);pop('m-off',officers);pop('m-act',actions);pop('m-stat',statuses);var dl=document.getElementById('fi-dl');dl.innerHTML='';fileIndex.forEach(function(v){var o=document.createElement('option');o.value=v;dl.appendChild(o);});}
 function setModalMode(mode){var fields=['m-serial','m-ref','m-subject','m-loc','m-off','m-act','m-drcv','m-dmov','m-sla','m-due','m-stat','m-flag','m-rem'];var disabled=(mode==='view');fields.forEach(function(id){var el=document.getElementById(id);if(el)el.disabled=disabled;});document.getElementById('m-edit-btn').style.display=disabled?'':'none';document.getElementById('m-save-btn').style.display=disabled?'none':'';}function enableModalEdit(){setModalMode('edit');}function openModal(editIdx){fillModalLists();var isEdit=(editIdx!=null);document.getElementById('m-idx').value=isEdit?editIdx:'';document.getElementById('mtitle').textContent=isEdit?'Edit Record':'Add New Record';if(isEdit){var r=rows[editIdx];document.getElementById('m-serial').value=r[0];document.getElementById('m-ref').value=r[1];document.getElementById('m-subject').value=r[2];document.getElementById('m-loc').value=r[3];document.getElementById('m-off').value=r[4];document.getElementById('m-act').value=r[5];document.getElementById('m-drcv').value=r[6];document.getElementById('m-dmov').value=r[7];document.getElementById('m-sla').value=r[8];document.getElementById('m-due').value=r[9];document.getElementById('m-stat').value=r[10];document.getElementById('m-flag').value=r[11];document.getElementById('m-rem').value=r[12];setModalMode('edit');}else{['m-serial','m-ref','m-subject','m-sla','m-rem'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('m-drcv').value=new Date().toISOString().slice(0,10);document.getElementById('m-dmov').value='';document.getElementById('m-due').value='';document.getElementById('m-stat').value='Active';document.getElementById('m-flag').value='ON TIME';document.getElementById('m-loc').value='';document.getElementById('m-off').value='';document.getElementById('m-act').value='';setModalMode('edit');}document.getElementById('mbg').classList.add('open');}
-function closeModal(){document.getElementById('mbg').classList.remove('open');}var currentDetailIdx=null;function openDetail(idx){var r=rows[idx];currentDetailIdx=idx;document.getElementById('d-ref').textContent=r[1]||'—';document.getElementById('d-subject').textContent=r[2]||'—';document.getElementById('d-serial').textContent=(getFiltered().indexOf(r)+1)+'.';document.getElementById('d-off').textContent=r[4]||'—';document.getElementById('d-loc').textContent=r[3]||'—';document.getElementById('d-act').textContent=r[5]||'—';document.getElementById('d-drcv').textContent=fmtDate(r[6])||'—';document.getElementById('d-dmov').textContent=fmtDate(r[7])||'—';document.getElementById('d-due').textContent=fmtDate(r[9])||'—';document.getElementById('d-sla').textContent=r[8]||'—';document.getElementById('d-rem').textContent=r[12]||'—';var st=r[10]||'';var dsSt=document.getElementById('d-status');dsSt.textContent=st;dsSt.className='detail-status '+(st==='Active'?'ds-active':st==='Completed'?'ds-completed':st==='On Hold'?'ds-hold':st==='Cancelled'?'ds-cancelled':st==='Filed'?'ds-filed':'');var fl=r[11]||'';var dsFl=document.getElementById('d-flag');dsFl.textContent=fl;dsFl.className='detail-flag '+(fl==='OVERDUE'?'df-overdue':fl==='ON TIME'?'df-ontime':'');var auditBy=document.getElementById('d-updated-by');if(auditBy)auditBy.textContent=r[13]||'—';var auditAt=document.getElementById('d-updated-at');if(auditAt){var ad=r[14]?new Date(r[14]):null;auditAt.textContent=ad?ad.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';}document.getElementById('detail-mbg').classList.add('open');gdriveSearchForRecord(r[2]);}
+function closeModal(){document.getElementById('mbg').classList.remove('open');}var currentDetailIdx=null;function openDetail(idx){var r=rows[idx];currentDetailIdx=idx;document.getElementById('d-ref').textContent=r[1]||'—';document.getElementById('d-subject').textContent=r[2]||'—';document.getElementById('d-serial').textContent=(getFiltered().indexOf(r)+1)+'.';document.getElementById('d-off').textContent=r[4]||'—';document.getElementById('d-loc').textContent=r[3]||'—';document.getElementById('d-act').textContent=r[5]||'—';document.getElementById('d-drcv').textContent=fmtDate(r[6])||'—';document.getElementById('d-dmov').textContent=fmtDate(r[7])||'—';document.getElementById('d-due').textContent=fmtDate(r[9])||'—';document.getElementById('d-sla').textContent=r[8]||'—';document.getElementById('d-rem').textContent=r[12]||'—';var st=r[10]||'';var dsSt=document.getElementById('d-status');dsSt.textContent=st;dsSt.className='detail-status '+(st==='Active'?'ds-active':st==='Completed'?'ds-completed':st==='On Hold'?'ds-hold':st==='Cancelled'?'ds-cancelled':st==='Filed'?'ds-filed':'');var fl=r[11]||'';var dsFl=document.getElementById('d-flag');dsFl.textContent=fl;dsFl.className='detail-flag '+(fl==='OVERDUE'?'df-overdue':fl==='ON TIME'?'df-ontime':'');var auditBy=document.getElementById('d-updated-by');if(auditBy)auditBy.textContent=r[13]||'—';var auditAt=document.getElementById('d-updated-at');if(auditAt){var ad=r[14]?new Date(r[14]):null;auditAt.textContent=ad?ad.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';}document.getElementById('detail-mbg').classList.add('open');gdriveSearchForRecord(r[2],r[1]);}
 function saveModal(){var r=['',document.getElementById('m-ref').value.trim(),document.getElementById('m-subject').value.trim(),document.getElementById('m-loc').value,document.getElementById('m-off').value,document.getElementById('m-act').value,document.getElementById('m-drcv').value,document.getElementById('m-dmov').value,document.getElementById('m-sla').value.trim(),document.getElementById('m-due').value,document.getElementById('m-stat').value,document.getElementById('m-flag').value,document.getElementById('m-rem').value.trim()];var idx=document.getElementById('m-idx').value;if(idx!=='')rows[parseInt(idx)]=r;else rows.push(r);saveData();closeModal();refresh();}
 function renderAdmin(){function draw(list,cid){var el=document.getElementById(cid);el.innerHTML='';list.forEach(function(item,i){var t=document.createElement('span');t.className='tag';t.textContent=item+' ';var x=document.createElement('button');x.className='tx';x.textContent='×';x.addEventListener('click',(function(idx){return function(){if(confirm('Remove "'+list[idx]+'"?')){list.splice(idx,1);renderAdmin();refresh();}};})(i));t.appendChild(x);el.appendChild(t);});}draw(officers,'at-officers');draw(fileIndex,'at-fileIndex');draw(statuses,'at-statuses');draw(locations,'at-locations');draw(actions,'at-actions');}
 function showAI(w){document.getElementById('ai-'+w).style.display='flex';document.getElementById('av-'+w).focus();}
@@ -37,10 +37,8 @@ document.getElementById('mbg').addEventListener('click',function(e){if(e.target=
 var GDRIVE_CLIENT_ID='1073280029907-0166ddlukbg2mg6mprp6hlk34l9fsj5a.apps.googleusercontent.com';
 var GDRIVE_FOLDER_ID='1prjqh7K3rQHHAsDErNT026Wq38wHCX0P';
 var _gTok=null,_gTC=null,_gTCb=null;
-var _gFileCache=null,_gFileCacheTime=0;
-var CACHE_TTL=5*60*1000; // 5 min
 
-// ── Token management ──
+// ── Token client ──
 function _gclient(){
   if(_gTC)return _gTC;
   if(!window.google||!window.google.accounts)return null;
@@ -60,75 +58,76 @@ function _gwithToken(cb){
   tc.requestAccessToken({prompt:''});
 }
 
-// ── Fetch all PDFs from folder (cached) ──
-async function _gAllFiles(){
-  var now=Date.now();
-  if(_gFileCache&&(now-_gFileCacheTime)<CACHE_TTL)return _gFileCache;
-  var files=[],pageToken=null;
-  var base='https://www.googleapis.com/drive/v3/files';
-  var q=encodeURIComponent("'"+GDRIVE_FOLDER_ID+"' in parents and mimeType='application/pdf' and trashed=false");
-  do{
-    var url=base+'?q='+q+'&fields=nextPageToken,files(id,name,webViewLink)&pageSize=200'+(pageToken?'&pageToken='+pageToken:'');
-    var res=await fetch(url,{headers:{'Authorization':'Bearer '+_gTok}});
-    if(res.status===401){_gTok=null;return null;}
-    var d=await res.json();
-    if(d.files)files=files.concat(d.files);
-    pageToken=d.nextPageToken;
-  }while(pageToken&&files.length<600);
-  _gFileCache=files;
-  _gFileCacheTime=now;
-  console.log('[Drive] Loaded',files.length,'PDFs from folder');
-  return files;
+// ── Stop words to ignore when picking search terms ──
+var _gStop=new Set(['that','this','with','from','have','will','been','were','they','their','which','when','what','where','also','more','into','some','than','then','there','these','those','after','about','other','your','each','such','over','both','during','before','between','should','could','would','shall','must','being','having','making','taking','request','order','ensure','conduct','first','second','third','within','under','above','following','regard','subject','letter','dated','naval','headquarters','branch','navy','nigerian','officer','command','approval']);
+
+// ── Pick the N most distinctive words from a text ──
+function _gDistinct(text, n){
+  return (text||'').toLowerCase()
+    .replace(/[^a-z0-9\s]/g,' ')
+    .split(/\s+/)
+    .filter(function(w){return w.length>4 && !_gStop.has(w);})
+    .sort(function(a,b){return b.length-a.length;}) // longer = more specific
+    .filter(function(w,i,a){return a.indexOf(w)===i;}) // dedupe
+    .slice(0,n);
 }
 
-// ── Fuzzy similarity: weighted token overlap ──
-function _gScore(subject,filename){
-  function tok(s){
-    return s.toLowerCase()
-      .replace(/[^a-z0-9\s]/g,' ')
-      .split(/\s+/)
-      .filter(function(w){return w.length>2;});
-  }
-  var ta=tok((subject||'').substring(0,300));
-  var tb=tok((filename||'').replace(/\.pdf$/i,''));
-  if(!ta.length||!tb.length)return 0;
-  var setB=new Set(tb);
-  var matched=0,total=0;
+// ── Score a filename against a subject (0–1) ──
+function _gScore(subject, filename){
+  var ta=_gDistinct(subject,10);
+  var fname=filename.toLowerCase().replace(/\.pdf$/i,'');
+  if(!ta.length)return 0;
+  var matched=0;
   ta.forEach(function(w){
-    // Weight longer words more heavily (they are more discriminating)
-    var wt=Math.pow(w.length,1.5);
-    total+=wt;
-    if(setB.has(w)){
-      matched+=wt; // exact word match
-    } else {
-      // Partial: check if subject word is contained in any filename word
-      var partial=false;
-      tb.forEach(function(fw){
-        if(!partial&&(fw.includes(w)||w.includes(fw))&&Math.min(w.length,fw.length)>3){
-          matched+=wt*0.4;partial=true;
-        }
-      });
-    }
+    if(fname.includes(w)) matched+=w.length;        // full match
+    else if(fname.includes(w.slice(0,5))) matched+=w.length*0.4; // prefix match
   });
-  return total>0?matched/total:0;
+  var maxPossible=ta.reduce(function(s,w){return s+w.length;},0);
+  return maxPossible>0?matched/maxPossible:0;
 }
 
-// ── Find best match across all files ──
-async function _gsearch(subject){
-  var files=await _gAllFiles();
-  if(!files||!files.length)return null;
-  var best=null,bestScore=0;
-  var THRESHOLD=0.12;
-  files.forEach(function(f){
+// ── Fetch candidates from Drive using targeted keyword queries ──
+async function _gCandidates(subject, fileref){
+  var subjectWords=_gDistinct(subject,3);
+  // also pull any alphanumeric chunk from the file ref (e.g. "020278", "291537")
+  var refChunks=(fileref||'').match(/[A-Z0-9]{4,}/gi)||[];
+  refChunks=refChunks.slice(0,2).map(function(s){return s.toLowerCase();});
+
+  var queries=subjectWords.concat(refChunks).slice(0,4);
+  if(!queries.length)return[];
+
+  var seen=new Map();
+  for(var i=0;i<queries.length;i++){
+    var kw=queries[i].replace(/'/g,'');
+    var q="'"+GDRIVE_FOLDER_ID+"' in parents and mimeType='application/pdf' and trashed=false and name contains '"+kw+"'";
+    try{
+      var res=await fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name,webViewLink)&pageSize=20',{headers:{'Authorization':'Bearer '+_gTok}});
+      if(res.status===401){_gTok=null;return null;}
+      var d=await res.json();
+      (d.files||[]).forEach(function(f){seen.set(f.id,f);});
+    }catch(e){}
+  }
+  return Array.from(seen.values());
+}
+
+// ── Find best matching PDF ──
+async function _gsearch(subject, fileref){
+  var candidates=await _gCandidates(subject, fileref);
+  if(!candidates||!candidates.length){
+    console.log('[Drive] No candidates found for:',subject.substring(0,60));
+    return null;
+  }
+  var best=null,bestScore=0,THRESHOLD=0.08;
+  candidates.forEach(function(f){
     var s=_gScore(subject,f.name);
     if(s>bestScore){bestScore=s;best=f;}
   });
-  console.log('[Drive] Best:',best?best.name:'none','score:',bestScore.toFixed(3));
+  console.log('[Drive] Candidates:',candidates.length,' Best:',best?best.name:'none',' Score:',bestScore.toFixed(3));
   return bestScore>=THRESHOLD?best:null;
 }
 
 // ── UI orchestration ──
-function gdriveSearchForRecord(subject){
+function gdriveSearchForRecord(subject, fileref){
   var panel=document.getElementById('d-pdf-panel');
   var loading=document.getElementById('d-pdf-loading');
   var frame=document.getElementById('d-pdf-frame');
@@ -142,7 +141,7 @@ function gdriveSearchForRecord(subject){
   if(titleEl)titleEl.textContent='';
   if(mbox)mbox.classList.add('detail-has-pdf');
   _gwithToken(async function(){
-    var file=await _gsearch(subject);
+    var file=await _gsearch(subject, fileref);
     if(loading)loading.style.display='none';
     if(file){
       if(titleEl)titleEl.textContent=file.name.replace(/\.pdf$/i,'');
