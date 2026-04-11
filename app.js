@@ -102,7 +102,7 @@ function _gScore(subject,filename){
 
 // ── Fetch candidates from Drive using targeted keyword queries ──
 async function _gCandidates(subject, fileref){
-  var subjectWords=_gDistinct(subject,3);
+  var subjectWords=_gDistinct(subject,3).map(function(t){return t.w;}); // extract .w from {w,acronym} objects
   // also pull any alphanumeric chunk from the file ref (e.g. "020278", "291537")
   var refChunks=(fileref||'').match(/[A-Z0-9]{4,}/gi)||[];
   refChunks=refChunks.slice(0,2).map(function(s){return s.toLowerCase();});
