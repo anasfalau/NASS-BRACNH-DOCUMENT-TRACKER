@@ -114,10 +114,10 @@ async function _gCandidates(subject, fileref){
   var seen=new Map();
   for(var i=0;i<queries.length;i++){
     var kw=queries[i].replace(/'/g,'');
-    // Try fullText contains first (searches OCR content inside PDFs), then name contains
-    var base="'"+GDRIVE_FOLDER_ID+"' in parents and mimeType='application/pdf' and trashed=false";
-    var qFull=base+" and fullText contains '"+kw+"'";
-    var qName=base+" and name contains '"+kw+"'";
+    // Search the whole accessible drive with fullText (recursive, finds PDFs in subfolders)
+    // Folder constraint dropped because PDFs live in subfolders, not directly in parent
+    var qFull="mimeType='application/pdf' and trashed=false and fullText contains '"+kw+"'";
+    var qName="mimeType='application/pdf' and trashed=false and name contains '"+kw+"'";
     try{
       for(var qi=0;qi<2;qi++){
         var q2=qi===0?qFull:qName;
@@ -125,6 +125,7 @@ async function _gCandidates(subject, fileref){
         if(res.status===401){_gTok=null;return null;}
         var d=await res.json();
         (d.files||[]).forEach(function(f){seen.set(f.id,f);});
+        if(seen.size>0)break; // fullText found results, skip name query
       }
     }catch(e){console.warn('[Drive] Query error:',e);}
   }
@@ -136,13 +137,13 @@ var _gFolderChecked=false;
 async function _gCheckFolder(){
   if(_gFolderChecked)return;
   _gFolderChecked=true;
+  // Probe: list immediate children (may be subfolders) and any PDFs directly inside
   var q=encodeURIComponent("'"+GDRIVE_FOLDER_ID+"' in parents and trashed=false");
-  var res=await fetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id,name,mimeType)&pageSize=5&supportsAllDrives=true&includeItemsFromAllDrives=true',{headers:{'Authorization':'Bearer '+_gTok}});
+  var res=await fetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id,name,mimeType)&pageSize=10&supportsAllDrives=true&includeItemsFromAllDrives=true',{headers:{'Authorization':'Bearer '+_gTok}});
   var d=await res.json();
-  var names=d.files?d.files.map(function(f){return f.name;}):[];
-  console.log('[Drive] Folder probe — status:',res.status,' files found:',names.length);
-  names.forEach(function(n,i){console.log('  ['+i+']',n);});
-  if(d.error)console.error('[Drive] Folder error:',d.error);
+  console.log('[Drive] Folder children (',res.status,'):');
+  (d.files||[]).forEach(function(f,i){console.log('  ['+i+']',f.mimeType==='application/vnd.google-apps.folder'?'[FOLDER]':'[FILE]',f.name);});
+  if(d.error)console.error('[Drive] Probe error:',d.error);
 }
 
 // ── Find best matching PDF ──
