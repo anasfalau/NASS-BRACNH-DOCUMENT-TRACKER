@@ -95,6 +95,13 @@ var rowIds = [];
     }
   };
 
+  // ── Google Drive token persistence ───────────────────────────
+  // GIS Token Client stores the access token only in the memory var _gTok.
+  // On every page refresh _gTok is undefined → Google prompts for login again.
+  // Fix: restore _gTok from localStorage on load, and intercept its setter
+  // so every new token is automatically saved (tokens last ~1 hour).
+  initGoogleTokenPersistence();
+
   // Re-sync when the user returns to this browser tab
   document.addEventListener('visibilitychange', async function () {
     if (document.visibilityState !== 'visible') return;
@@ -318,6 +325,40 @@ async function pushData(sb) {
   }
 }
 
+// ── Google Drive token persistence ─────────────────────────────
+function initGoogleTokenPersistence() {
+  const TOKEN_KEY  = 'nass_gdrive_token';
+  const EXPIRY_KEY = 'nass_gdrive_expiry';
+
+  // Restore a still-valid token so _gwithToken uses it without prompting
+  const stored  = localStorage.getItem(TOKEN_KEY);
+  const expiry  = parseInt(localStorage.getItem(EXPIRY_KEY) || '0', 10);
+  if (stored && expiry > Date.now() + 60000) {
+    window._gTok = stored;
+    console.log('[Drive] Token restored — valid for ~' +
+      Math.round((expiry - Date.now()) / 60000) + ' min');
+  }
+
+  // Intercept every future assignment to _gTok so new tokens are auto-saved
+  let _tok = window._gTok || null;
+  Object.defineProperty(window, '_gTok', {
+    get() { return _tok; },
+    set(val) {
+      _tok = val;
+      if (val) {
+        // GIS access tokens last 1 hour; save with a 55-min expiry to be safe
+        localStorage.setItem(TOKEN_KEY,  val);
+        localStorage.setItem(EXPIRY_KEY, (Date.now() + 55 * 60 * 1000).toString());
+        console.log('[Drive] Token saved to storage');
+      } else {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(EXPIRY_KEY);
+      }
+    },
+    configurable: true
+  });
+}
+
 // ── Auth helpers ────────────────────────────────────────────────
 function bindLoginForm(sb) {
   document.getElementById('nass-login-form')
@@ -342,6 +383,10 @@ function bindLoginForm(sb) {
 }
 
 function nassLogout() {
+  // Clear Google Drive token so the next user has to authenticate freshly
+  localStorage.removeItem('nass_gdrive_token');
+  localStorage.removeItem('nass_gdrive_expiry');
+  window._gTok = null;
   window._sb.auth.signOut().then(() => window.location.reload());
 }
 
