@@ -42,6 +42,7 @@ var rowIds = [];
   }
 
   // Pull latest data from Supabase, then load app
+  try {
   await pullData(sb);
   await loadScript('app.js');
 
@@ -73,11 +74,13 @@ var rowIds = [];
     if (!isModalOpen() && typeof refresh === 'function') refresh();
   });
 
-  // Wait for the websocket to be confirmed SUBSCRIBED before continuing
+  // Wait for SUBSCRIBED — hard 6 s timeout so a stalled socket never freezes the app
   await new Promise((resolve) => {
+    const bail = setTimeout(resolve, 6000);
     nassChannel.subscribe((status) => {
       console.log('[NASS] Channel:', status);
       if (status === 'SUBSCRIBED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        clearTimeout(bail);
         resolve();
       }
     });
@@ -114,7 +117,12 @@ var rowIds = [];
   const userEl = document.getElementById('nass-user-email');
   if (userEl) userEl.textContent = session.user.email;
   show('nass-user-wrap');
-  hide('nass-loading');
+
+  } catch (err) {
+    console.error('[NASS] Init error:', err);
+  } finally {
+    hide('nass-loading'); // always runs — spinner never freezes
+  }
 
 })();
 
@@ -330,33 +338,29 @@ function initGoogleTokenPersistence() {
   const TOKEN_KEY  = 'nass_gdrive_token';
   const EXPIRY_KEY = 'nass_gdrive_expiry';
 
-  // Restore a still-valid token so _gwithToken uses it without prompting
-  const stored  = localStorage.getItem(TOKEN_KEY);
-  const expiry  = parseInt(localStorage.getItem(EXPIRY_KEY) || '0', 10);
+  // Restore a still-valid token so _gwithToken skips the OAuth prompt
+  const stored = localStorage.getItem(TOKEN_KEY);
+  const expiry = parseInt(localStorage.getItem(EXPIRY_KEY) || '0', 10);
   if (stored && expiry > Date.now() + 60000) {
     window._gTok = stored;
     console.log('[Drive] Token restored — valid for ~' +
       Math.round((expiry - Date.now()) / 60000) + ' min');
   }
 
-  // Intercept every future assignment to _gTok so new tokens are auto-saved
-  let _tok = window._gTok || null;
-  Object.defineProperty(window, '_gTok', {
-    get() { return _tok; },
-    set(val) {
-      _tok = val;
-      if (val) {
-        // GIS access tokens last 1 hour; save with a 55-min expiry to be safe
-        localStorage.setItem(TOKEN_KEY,  val);
-        localStorage.setItem(EXPIRY_KEY, (Date.now() + 55 * 60 * 1000).toString());
-        console.log('[Drive] Token saved to storage');
-      } else {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(EXPIRY_KEY);
-      }
-    },
-    configurable: true
-  });
+  // Poll every 3 s: when app.js receives a new GIS token (_gTok changes),
+  // save it to localStorage immediately.
+  // Polling is used instead of Object.defineProperty because var-declared
+  // globals are non-configurable and defineProperty would throw a TypeError.
+  let lastSeen = window._gTok || null;
+  setInterval(function () {
+    const current = window._gTok;
+    if (current && current !== lastSeen) {
+      lastSeen = current;
+      localStorage.setItem(TOKEN_KEY,  current);
+      localStorage.setItem(EXPIRY_KEY, (Date.now() + 55 * 60 * 1000).toString());
+      console.log('[Drive] New token saved to storage');
+    }
+  }, 3000);
 }
 
 // ── Auth helpers ────────────────────────────────────────────────
