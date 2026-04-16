@@ -11,10 +11,25 @@ var rowIds = [];
 
 // ── Bootstrap ──────────────────────────────────────────────────
 (async function init() {
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession:    true,   // save token to localStorage
+      autoRefreshToken:  true,   // silently renew before expiry
+      detectSessionInUrl: false, // not needed for email/password auth
+      storage:           window.localStorage
+    }
+  });
   window._sb = sb;
 
-  const { data: { session } } = await sb.auth.getSession();
+  // onAuthStateChange is the reliable way to restore a persisted session —
+  // it fires once immediately with the current state (SIGNED_IN or null),
+  // and handles token refresh automatically before resolving.
+  const session = await new Promise(resolve => {
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
+      subscription.unsubscribe();
+      resolve(session);
+    });
+  });
 
   if (!session) {
     hide('nass-loading');
