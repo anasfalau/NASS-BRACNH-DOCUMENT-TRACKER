@@ -173,11 +173,17 @@
     <div class="detail-right" id="d-pdf-panel" style="display:none">
       <div class="pdf-panel-header">
         <span class="pdf-panel-label">MATCHED DOCUMENT</span>
-        <a id="d-pdf-open" href="#" target="_blank" class="pdf-open-link" title="Open in Google Drive">Open in Drive &#8599;</a>
+        <div class="pdf-panel-actions">
+          <button class="pdf-rot-btn" onclick="rotatePdf(-90)" title="Rotate left">&#8634;</button>
+          <button class="pdf-rot-btn" onclick="rotatePdf(90)"  title="Rotate right">&#8635;</button>
+          <a id="d-pdf-open" href="#" target="_blank" class="pdf-open-link" title="Open in Google Drive">Open in Drive &#8599;</a>
+        </div>
       </div>
       <div id="d-pdf-title-bar"><span id="d-pdf-title"></span></div>
       <div id="d-pdf-loading">Searching Drive&hellip;</div>
-      <iframe id="d-pdf-frame" src="" frameborder="0" allowfullscreen></iframe>
+      <div id="d-pdf-rotate-wrap">
+        <iframe id="d-pdf-frame" src="" frameborder="0" allowfullscreen></iframe>
+      </div>
     </div><!-- /.detail-right -->
   </div>
 </div>
@@ -220,6 +226,42 @@
   }
   // Run after app.js initialises the view
   document.addEventListener('DOMContentLoaded',function(){setTimeout(initResize,200)});
+
+  // ── PDF Rotation ──────────────────────────────────────────────
+  var _pdfRot = 0;
+  window.rotatePdf = function(delta) {
+    _pdfRot = ((_pdfRot + delta) % 360 + 360) % 360;
+    var frame = document.getElementById('d-pdf-frame');
+    var wrap  = document.getElementById('d-pdf-rotate-wrap');
+    if (!frame || !wrap) return;
+    var W = wrap.offsetWidth;
+    var H = wrap.offsetHeight;
+    if (_pdfRot === 90 || _pdfRot === 270) {
+      // Swap visual dimensions so the PDF still fills the panel
+      frame.style.width  = H + 'px';
+      frame.style.height = W + 'px';
+      frame.style.left   = ((W - H) / 2) + 'px';
+      frame.style.top    = ((H - W) / 2) + 'px';
+    } else {
+      frame.style.width  = W + 'px';
+      frame.style.height = H + 'px';
+      frame.style.left   = '0px';
+      frame.style.top    = '0px';
+    }
+    frame.style.transform = 'rotate(' + _pdfRot + 'deg)';
+  };
+  // Reset rotation whenever a new document is loaded
+  document.addEventListener('nassDetailOpened', function() {
+    _pdfRot = 0;
+    var frame = document.getElementById('d-pdf-frame');
+    var wrap  = document.getElementById('d-pdf-rotate-wrap');
+    if (!frame || !wrap) return;
+    frame.style.transform = 'rotate(0deg)';
+    frame.style.width     = wrap.offsetWidth  + 'px';
+    frame.style.height    = wrap.offsetHeight + 'px';
+    frame.style.left      = '0px';
+    frame.style.top       = '0px';
+  });
 
 })();
 </script>

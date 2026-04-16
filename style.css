@@ -175,4 +175,8 @@ th{position:relative}
 .pdf-open-link:hover{text-decoration:underline}
 #d-pdf-title-bar{padding:9px 16px;font-size:12px;font-weight:600;color:#1a2332;background:#eef1f6;border-bottom:1px solid #dde2ec;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
 #d-pdf-loading{display:flex;align-items:center;justify-content:center;flex:1;font-size:13px;color:#6b7585;font-style:italic}
-#d-pdf-frame{flex:1;width:100%;border:none;min-height:0;display:none}
+#d-pdf-rotate-wrap{flex:1;position:relative;overflow:hidden;min-height:0}
+#d-pdf-frame{position:absolute;top:0;left:0;width:100%;height:100%;border:none;display:none;transform-origin:center center;transition:transform 0.3s ease}
+.pdf-panel-actions{display:flex;align-items:center;gap:10px}
+.pdf-rot-btn{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:#fff;border-radius:4px;width:30px;height:28px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;padding:0;line-height:1}
+.pdf-rot-btn:hover{background:rgba(255,255,255,0.28)}
