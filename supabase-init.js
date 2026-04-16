@@ -21,15 +21,18 @@ var rowIds = [];
   });
   window._sb = sb;
 
-  // onAuthStateChange is the reliable way to restore a persisted session —
-  // it fires once immediately with the current state (SIGNED_IN or null),
-  // and handles token refresh automatically before resolving.
-  const session = await new Promise(resolve => {
-    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
-      subscription.unsubscribe();
-      resolve(session);
-    });
-  });
+  // Step 1 — read whatever token is in localStorage
+  let { data: { session } } = await sb.auth.getSession();
+
+  // Step 2 — if token is expired (or expiring within 60 s), try a silent refresh
+  //           This handles the "came back after >1 hour" case without re-login
+  if (session) {
+    const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+    if (expiresAt < Date.now() + 60000) {
+      const { data: refreshed } = await sb.auth.refreshSession();
+      session = refreshed?.session ?? null;
+    }
+  }
 
   if (!session) {
     hide('nass-loading');
