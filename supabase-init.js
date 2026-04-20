@@ -45,6 +45,7 @@ var rowIds = [];
   try {
   await pullData(sb);
   await loadScript('app.js');
+  await loadScript('chat.js');
 
   // Sync rowIds with current rows
   rowIds = JSON.parse(localStorage.getItem('nassRowIds') || '[]');

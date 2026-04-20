@@ -180,3 +180,68 @@ th{position:relative}
 .pdf-panel-actions{display:flex;align-items:center;gap:10px}
 .pdf-rot-btn{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:#fff;border-radius:4px;width:30px;height:28px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;padding:0;line-height:1}
 .pdf-rot-btn:hover{background:rgba(255,255,255,0.28)}
+
+/* ================================================================
+   AI CHAT PANEL
+   ================================================================ */
+
+/* Floating action button */
+#ncp-fab{position:fixed;bottom:28px;right:28px;z-index:900;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(135deg,#002655,#004080);color:#fff;box-shadow:0 4px 18px rgba(0,38,85,0.45);display:flex;align-items:center;justify-content:center;transition:transform 0.2s,box-shadow 0.2s;padding:0}
+#ncp-fab:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(0,38,85,0.55)}
+#ncp-fab.ncp-fab-active{background:linear-gradient(135deg,#1a4d8f,#003366)}
+.ncp-fab-icon{font-size:26px;line-height:1}
+
+/* Panel */
+#ncp-panel{position:fixed;bottom:96px;right:28px;z-index:901;width:400px;max-width:calc(100vw - 40px);height:580px;max-height:calc(100vh - 120px);background:#fff;border-radius:14px;box-shadow:0 12px 48px rgba(0,0,0,0.22),0 2px 8px rgba(0,0,0,0.12);display:flex;flex-direction:column;overflow:hidden;transform:scale(0.9) translateY(20px);opacity:0;pointer-events:none;transition:transform 0.22s cubic-bezier(0.34,1.56,0.64,1),opacity 0.18s ease}
+#ncp-panel.ncp-open{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
+
+/* Panel header */
+.ncp-header{background:linear-gradient(135deg,#002655 0%,#004080 100%);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:2px solid #c8a400}
+.ncp-header-info{display:flex;align-items:center;gap:11px}
+.ncp-header-icon{font-size:26px;line-height:1}
+.ncp-title{font-size:13px;font-weight:700;letter-spacing:0.04em}
+.ncp-subtitle{font-size:10.5px;opacity:0.65;margin-top:2px}
+.ncp-header-actions{display:flex;gap:6px}
+.ncp-icon-btn{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.22);color:#fff;border-radius:5px;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;padding:0}
+.ncp-icon-btn:hover{background:rgba(255,255,255,0.28)}
+
+/* Messages area */
+.ncp-msgs{flex:1;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.ncp-msgs::-webkit-scrollbar{width:5px}
+.ncp-msgs::-webkit-scrollbar-track{background:transparent}
+.ncp-msgs::-webkit-scrollbar-thumb{background:#c8cdd8;border-radius:10px}
+
+/* Message bubbles */
+.ncp-bubble{display:flex;flex-direction:column;gap:4px;max-width:88%}
+.ncp-bubble-user{align-self:flex-end;align-items:flex-end}
+.ncp-bubble-assistant{align-self:flex-start;align-items:flex-start}
+.ncp-bubble-label{font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#9aa3b0;margin-bottom:1px}
+.ncp-bubble-user .ncp-bubble-label{color:#6b8cb8}
+.ncp-bubble-content{padding:10px 13px;border-radius:10px;font-size:12.5px;line-height:1.6;color:#1a2332;word-break:break-word}
+.ncp-bubble-user .ncp-bubble-content{background:linear-gradient(135deg,#003366,#1a4d8f);color:#fff;border-radius:10px 10px 2px 10px}
+.ncp-bubble-assistant .ncp-bubble-content{background:#f0f4fb;border:1px solid #dce3f0;border-radius:10px 10px 10px 2px}
+.ncp-code{background:#e8edf5;border:1px solid #c8d0e0;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11.5px;color:#1a3060}
+.ncp-li{display:block;padding-left:8px}
+.ncp-err{color:#c0392b;font-size:12px}
+
+/* Typing animation */
+.ncp-typing-dots{display:inline-flex;align-items:center;gap:4px;padding:4px 2px}
+.ncp-typing-dots span{display:inline-block;width:7px;height:7px;border-radius:50%;background:#7a9cc8;animation:ncp-bounce 1.2s infinite ease-in-out}
+.ncp-typing-dots span:nth-child(2){animation-delay:0.2s}
+.ncp-typing-dots span:nth-child(3){animation-delay:0.4s}
+@keyframes ncp-bounce{0%,80%,100%{transform:scale(0.7);opacity:0.5}40%{transform:scale(1);opacity:1}}
+
+/* Starter chips */
+.ncp-starters{padding:6px 14px 10px;display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0}
+.ncp-starter{background:#f0f4fb;border:1px solid #c8d0e0;border-radius:20px;padding:5px 11px;font-size:11px;color:#003366;font-weight:600;cursor:pointer;transition:background 0.15s,border-color 0.15s;white-space:nowrap}
+.ncp-starter:hover{background:#dbeeff;border-color:#7aacdd}
+
+/* Input bar */
+.ncp-input-bar{display:flex;align-items:flex-end;gap:8px;padding:10px 12px;border-top:1px solid #e8ecf3;flex-shrink:0;background:#fafbfd}
+#ncp-input{flex:1;border:1px solid #c8cdd8;border-radius:8px;padding:8px 11px;font-size:12.5px;font-family:inherit;color:#1a2332;resize:none;outline:none;line-height:1.5;max-height:120px;overflow-y:auto;background:#fff;transition:border-color 0.15s,box-shadow 0.15s}
+#ncp-input:focus{border-color:#003366;box-shadow:0 0 0 3px rgba(0,51,102,0.1)}
+#ncp-input:disabled{opacity:0.6;cursor:not-allowed}
+.ncp-send-btn{flex-shrink:0;width:36px;height:36px;border-radius:8px;border:none;background:linear-gradient(135deg,#002655,#004080);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.15s,transform 0.1s}
+.ncp-send-btn:hover{opacity:0.88;transform:scale(1.06)}
+.ncp-send-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.ncp-send-btn svg{width:16px;height:16px}
