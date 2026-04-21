@@ -645,6 +645,15 @@ th{position:relative}
 .db-od-tbl tbody td{padding:7px 10px;border-bottom:1px solid var(--border-divider);vertical-align:middle}
 .db-od-row{cursor:pointer}
 .db-od-tbl tbody tr:hover td{background:var(--bg-row-hover)}
+/* Overdue table pager */
+.db-pager{display:flex;align-items:center;gap:4px;padding:10px 0 2px;flex-wrap:wrap}
+.db-pg-btn{min-width:30px;height:30px;padding:0 6px;border:1px solid var(--border-soft);border-radius:var(--radius-sm);background:var(--bg-card);color:var(--fg-body);font-size:12px;font-family:var(--font-sans);cursor:pointer;transition:background var(--ease-std)}
+.db-pg-btn:hover:not(:disabled){background:var(--bg-muted)}
+.db-pg-btn:disabled{opacity:0.35;cursor:default}
+.db-pg-active{background:var(--nass-navy-700)!important;color:#fff!important;border-color:var(--nass-navy-700)!important;font-weight:700}
+.db-pg-arrow{font-size:13px}
+.db-pg-gap{padding:0 2px;color:var(--fg-faint);font-size:12px;line-height:30px}
+.db-pg-info{margin-left:8px;font-size:11px;color:var(--fg-faint)}
 @media(max-width:900px){.db-charts{grid-template-columns:1fr}}
 @media(max-width:640px){.db-stats{gap:8px}.db-tile{min-width:calc(50% - 4px);flex:1 1 calc(50% - 4px);padding:10px 12px}.db-tile-n{font-size:22px}}
 

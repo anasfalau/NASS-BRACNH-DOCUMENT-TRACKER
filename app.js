@@ -91,18 +91,35 @@ function _drawCharts(){
     plugins:{legend:{display:false}},
     scales:{x:{grid:{color:'#e8eaf0'},ticks:{stepSize:1,font:{size:11}}},
             y:{grid:{display:false},ticks:{font:{size:11}}}}}});
-  // ── Overdue table ─────────────────────────────────────────────
-  var ol=document.getElementById('db-overdue-list');if(!ol)return;
-  var odRows=rows.filter(function(r){return computeFlag(r)==='OVERDUE';});
-  if(!odRows.length){ol.innerHTML='<div class="dh-empty">No overdue records \u2714</div>';return;}
-  ol.innerHTML='<table class="db-od-tbl"><thead><tr><th>File Ref</th><th>Subject</th><th>Officer</th><th>Due Date</th><th>Days Over</th></tr></thead><tbody>'+
-    odRows.map(function(r){
-      var d=r[9]&&r[9].length>=8?new Date(r[9]):null;
-      var days=d?Math.max(0,Math.round((new Date()-d)/86400000)):'—';
-      var ri=rows.indexOf(r);
-      return'<tr class="db-od-row" onclick="showView(\'tracker\');openDetail('+ri+')" title="Open record"><td>'+_esc(r[1])+'</td><td>'+_esc(r[2].length>60?r[2].slice(0,60)+'…':r[2])+'</td><td>'+_esc(r[4])+'</td><td>'+fmtDate(r[9])+'</td><td><span class="cdg-over">'+days+'d</span></td></tr>';
-    }).join('')+'</tbody></table>';
+  // ── Overdue table (paginated) ─────────────────────────────────
+  _odRows=rows.filter(function(r){return computeFlag(r)==='OVERDUE';});
+  _odPage=1;renderOdPage();
 }
+var _odRows=[],_odPage=1,_odPageSize=10;
+function renderOdPage(){
+  var ol=document.getElementById('db-overdue-list');if(!ol)return;
+  if(!_odRows.length){ol.innerHTML='<div class="dh-empty">No overdue records \u2714\ufe0f</div>';return;}
+  var tot=_odRows.length,totalPages=Math.max(1,Math.ceil(tot/_odPageSize));
+  _odPage=Math.min(Math.max(_odPage,1),totalPages);
+  var start=(_odPage-1)*_odPageSize,slice=_odRows.slice(start,start+_odPageSize);
+  var tbody=slice.map(function(r){
+    var d=r[9]&&r[9].length>=8?new Date(r[9]):null;
+    var days=d?Math.max(0,Math.round((new Date()-d)/86400000)):'—';
+    var ri=rows.indexOf(r);
+    return'<tr class="db-od-row" onclick="showView(\'tracker\');openDetail('+ri+')" title="Open record"><td>'+_esc(r[1])+'</td><td>'+_esc(r[2].length>60?r[2].slice(0,60)+'\u2026':r[2])+'</td><td>'+_esc(r[4])+'</td><td>'+fmtDate(r[9])+'</td><td><span class="cdg-over">'+days+'d</span></td></tr>';
+  }).join('');
+  var pager='';
+  if(totalPages>1){
+    var btns='';
+    var lo=Math.max(1,_odPage-2),hi=Math.min(totalPages,lo+4);lo=Math.max(1,hi-4);
+    if(lo>1)btns+='<button class="db-pg-btn" onclick="goOdPage(1)">1</button>'+(lo>2?'<span class="db-pg-gap">\u2026</span>':'');
+    for(var p=lo;p<=hi;p++)btns+='<button class="db-pg-btn'+(p===_odPage?' db-pg-active':'')+'" onclick="goOdPage('+p+')">'+p+'</button>';
+    if(hi<totalPages)btns+=(hi<totalPages-1?'<span class="db-pg-gap">\u2026</span>':'')+'<button class="db-pg-btn" onclick="goOdPage('+totalPages+')">'+totalPages+'</button>';
+    pager='<div class="db-pager"><button class="db-pg-btn db-pg-arrow" onclick="goOdPage('+(_odPage-1)+')"'+(_odPage===1?' disabled':'')+'>&#8592;</button>'+btns+'<button class="db-pg-btn db-pg-arrow" onclick="goOdPage('+(_odPage+1)+')"'+(_odPage===totalPages?' disabled':'')+'>&#8594;</button><span class="db-pg-info">'+start+1+'\u2013'+Math.min(start+_odPageSize,tot)+' of '+tot+'</span></div>';
+  }
+  ol.innerHTML='<table class="db-od-tbl"><thead><tr><th>File Ref</th><th>Subject</th><th>Officer</th><th>Due Date</th><th>Days Over</th></tr></thead><tbody>'+tbody+'</tbody></table>'+pager;
+}
+function goOdPage(p){_odPage=p;renderOdPage();}
 // ── Record Change History ─────────────────────────────────────────
 async function loadRecordHistory(ri){
   var list=document.getElementById('d-history-list');if(!list)return;
