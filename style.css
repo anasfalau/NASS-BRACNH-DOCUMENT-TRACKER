@@ -258,11 +258,15 @@ th{position:relative}
 .pdf-open-link:hover{text-decoration:underline}
 #d-pdf-title-bar{padding:9px 16px;font-size:12px;font-weight:600;color:var(--fg-ink);background:var(--bg-app);border-bottom:1px solid var(--border-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
 #d-pdf-loading{display:flex;align-items:center;justify-content:center;flex:1;font-size:13px;color:var(--fg-subtle);font-style:italic}
-#d-pdf-rotate-wrap{flex:1;position:relative;overflow:hidden;min-height:0}
+#d-pdf-rotate-wrap{flex:1;position:relative;overflow:auto;min-height:0}
 #d-pdf-frame{position:absolute;top:0;left:0;width:100%;height:100%;border:none;display:none;transform-origin:center center;transition:transform var(--ease-pdf) ease}
 .pdf-panel-actions{display:flex;align-items:center;gap:10px}
 .pdf-rot-btn{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:var(--fg-on-navy);border-radius:var(--radius-sm);width:30px;height:28px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background var(--ease-std);padding:0;line-height:1}
 .pdf-rot-btn:hover{background:rgba(255,255,255,0.28)}
+.pdf-zoom-group{display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:var(--radius-sm);padding:0 2px}
+.pdf-zoom-btn{border:none;background:none}
+.pdf-zoom-btn:hover{background:rgba(255,255,255,0.28)}
+.pdf-zoom-lbl{font-size:10px;font-weight:700;letter-spacing:0.04em;color:rgba(255,255,255,0.8);min-width:32px;text-align:center;user-select:none}
 
 /* ================================================================
    AI CHAT PANEL
@@ -373,8 +377,93 @@ th{position:relative}
   .sbar label{display:none}
   .sbar select{flex:1;min-width:0}
 
-  /* ── Table ──────────────────────────────────────────────────── */
-  .tw{max-height:calc(100vh - 340px);max-height:calc(100svh - 340px)}
+  /* ── Card table: unwrap chrome ─────────────────────────────── */
+  .tw{overflow:visible;max-height:none}
+  .tw table{display:block}
+  .tw thead{display:none}
+  .tw tbody{display:flex;flex-direction:column;gap:10px;padding:10px 12px}
+
+  /* Row → card */
+  .tw tr{
+    display:grid;
+    grid-template-columns:1fr auto;
+    margin:0;
+    border:1px solid var(--border-soft);
+    border-left:3px solid var(--border-default);
+    border-radius:10px;
+    background:var(--bg-card);
+    box-shadow:0 1px 4px rgba(0,0,0,0.06);
+    overflow:hidden
+  }
+  /* Status accent → left border (replaces full row colour) */
+  .tw .s-active   {border-left-color:var(--status-active-fg)}
+  .tw .s-completed{border-left-color:var(--status-completed-fg)}
+  .tw .s-hold     {border-left-color:var(--status-hold-fg)}
+  .tw .s-cancelled{border-left-color:var(--status-cancelled-fg)}
+  .tw .s-filed    {border-left-color:var(--status-filed-fg)}
+  .tw .row-overdue{border-left-color:var(--signal-danger)}
+  /* Reset all td backgrounds inside cards */
+  .tw td,
+  .tw .s-active td,.tw .s-completed td,.tw .s-hold td,
+  .tw .s-cancelled td,.tw .s-filed td,.tw .row-overdue td,
+  .tw tr:hover td{background:transparent!important;border:none;padding:0}
+  /* Hide all cells by default; show only key ones below */
+  .tw td{display:none!important;vertical-align:top}
+
+  /* ── Cell 2: File Ref — header left ────────────────────────── */
+  .tw td:nth-child(2){
+    display:block!important;grid-column:1;grid-row:1;
+    padding:10px 12px 2px;
+    font-size:10px;font-weight:700;color:var(--fg-subtle);
+    letter-spacing:0.06em;text-transform:uppercase;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+  }
+  /* ── Cell 11: Status — top-right, spans rows 1-2 ───────────── */
+  .tw td:nth-child(11){
+    display:flex!important;align-items:flex-start;justify-content:flex-end;
+    grid-column:2;grid-row:1/3;
+    padding:10px 12px 4px;
+    font-size:11px;font-weight:700;white-space:nowrap
+  }
+  /* ── Cell 3: Subject — main content ────────────────────────── */
+  .tw td:nth-child(3){
+    display:block!important;grid-column:1;grid-row:2;
+    padding:2px 12px 8px;
+    font-size:13px;font-weight:600;color:var(--nass-navy-700);
+    cursor:pointer;line-height:1.4
+  }
+  .tw td:nth-child(3):hover{background:transparent!important;color:var(--nass-navy-700)}
+  /* ── Cell 5: Officer ────────────────────────────────────────── */
+  .tw td:nth-child(5){
+    display:flex!important;align-items:center;gap:5px;
+    grid-column:1;grid-row:3;
+    padding:0 12px 8px;
+    font-size:11.5px;color:var(--fg-muted)
+  }
+  .tw td:nth-child(5)::before{
+    content:"Officer:";flex-shrink:0;
+    font-size:9.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:0.06em;color:var(--fg-faint)
+  }
+  /* ── Cell 12: Delay flag ────────────────────────────────────── */
+  .tw td:nth-child(12){
+    display:flex!important;align-items:flex-end;justify-content:flex-end;
+    grid-column:2;grid-row:3;
+    padding:0 12px 8px;
+    font-size:11px;font-weight:700;white-space:nowrap
+  }
+  /* ── Cell 14: Actions — full-width footer ───────────────────── */
+  .tw td:nth-child(14){
+    display:flex!important;
+    grid-column:1/-1;grid-row:4;
+    padding:8px 12px;gap:8px;
+    align-items:center;justify-content:flex-end;
+    border-top:1px solid var(--border-divider);
+    background:var(--bg-subtle)!important
+  }
+  /* Touch-friendly action buttons */
+  .view-btn,.edit-btn{font-size:12px;padding:7px 14px}
+  .del{width:28px;height:28px}
 
   /* ── Bottom bar ─────────────────────────────────────────────── */
   .bbar{padding:8px 12px;flex-wrap:wrap;gap:6px}
@@ -407,6 +496,12 @@ th{position:relative}
   /* ── Pagination ─────────────────────────────────────────────── */
   .pg-btn{min-width:28px;height:28px;font-size:12px}
   .pg-arrow{min-width:50px;font-size:11px}
+
+  /* ── PDF viewer: scrollable + zoomed on mobile ─────────────── */
+  #d-pdf-rotate-wrap{-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+  #d-pdf-frame{touch-action:pan-x pan-y}
+  .pdf-panel-header{flex-wrap:wrap;gap:6px}
+  .pdf-open-link{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:4px 10px}
 
   /* ── AI Chat panel: full width ──────────────────────────────── */
   #ncp-panel{left:8px;right:8px;width:auto;bottom:68px;border-radius:12px;height:clamp(340px,70vh,580px)}
