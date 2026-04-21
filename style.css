@@ -215,7 +215,11 @@ td select{cursor:pointer}
 .detail-header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:18px;padding-bottom:15px;border-bottom:2px solid var(--border-divider)}
 .detail-header-main{flex:1;min-width:0}
 .detail-ref{font-size:18px;font-weight:700;color:var(--nass-navy-700);letter-spacing:0.04em;margin-bottom:5px}
-.detail-subject{font-size:13px;color:var(--fg-body);line-height:1.5}
+.detail-subject{font-size:13px;color:var(--fg-body);line-height:1.5;text-decoration:none;display:block}
+/* When a matching Drive document is found, style as a link */
+.detail-subject.detail-subject-linked{color:var(--nass-navy-700);cursor:pointer}
+.detail-subject.detail-subject-linked::after{content:' \2197';font-size:11px;opacity:0.6}
+.detail-subject.detail-subject-linked:hover{text-decoration:underline;color:var(--nass-navy-500)}
 .detail-badges{display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0}
 .detail-status{padding:5px 13px;border-radius:var(--radius-pill);font-size:11.5px;font-weight:700;letter-spacing:0.04em;white-space:nowrap}
 .detail-flag{padding:4px 11px;border-radius:var(--radius-pill);font-size:11px;font-weight:700;letter-spacing:0.05em;white-space:nowrap}
@@ -619,6 +623,8 @@ th{position:relative}
 /* Summary stat tiles */
 .db-stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
 .db-tile{flex:1 1 100px;min-width:100px;background:var(--bg-card);border-radius:var(--radius-card);padding:14px 18px;box-shadow:var(--shadow-card);border-top:3px solid var(--border-default);cursor:default}
+.db-tile-link{cursor:pointer;transition:box-shadow var(--ease-std),transform var(--ease-std)}
+.db-tile-link:hover{box-shadow:var(--shadow-tile-hov);transform:translateY(-2px)}
 .db-tile-n{font-size:26px;font-weight:800;color:var(--fg-ink);line-height:1}
 .db-tile-l{font-size:11px;font-weight:600;color:var(--fg-subtle);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em}
 .db-t-active{border-top-color:var(--status-active-fg)}.db-t-active .db-tile-n{color:var(--status-active-fg)}
@@ -637,7 +643,8 @@ th{position:relative}
 .db-od-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .db-od-tbl thead th{background:var(--bg-muted);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--fg-subtle);border-bottom:2px solid var(--border-soft)}
 .db-od-tbl tbody td{padding:7px 10px;border-bottom:1px solid var(--border-divider);vertical-align:middle}
-.db-od-tbl tbody tr:hover td{background:var(--bg-muted)}
+.db-od-row{cursor:pointer}
+.db-od-tbl tbody tr:hover td{background:var(--bg-row-hover)}
 @media(max-width:900px){.db-charts{grid-template-columns:1fr}}
 @media(max-width:640px){.db-stats{gap:8px}.db-tile{min-width:calc(50% - 4px);flex:1 1 calc(50% - 4px);padding:10px 12px}.db-tile-n{font-size:22px}}
 

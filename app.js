@@ -32,7 +32,7 @@ function populateOfficerFilter(){var sel=document.getElementById('f-officer'),cu
 function doSort(col){var ths=document.querySelectorAll('thead th');if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true;}ths.forEach(function(t){t.classList.remove('sa','sd');});ths[col].classList.add(sortAsc?'sa':'sd');applyFilter();}
 function fillModalLists(){function pop(id,list){var el=document.getElementById(id);el.innerHTML='<option value="">— Select —</option>';list.forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o);});}pop('m-loc',locations);pop('m-off',officers);pop('m-act',actions);pop('m-stat',statuses);var dl=document.getElementById('fi-dl');dl.innerHTML='';fileIndex.forEach(function(v){var o=document.createElement('option');o.value=v;dl.appendChild(o);});}
 function setModalMode(mode){var fields=['m-ref','m-subject','m-loc','m-off','m-act','m-drcv','m-dmov','m-sla','m-due','m-stat','m-flag','m-rem'];var disabled=(mode==='view');fields.forEach(function(id){var el=document.getElementById(id);if(el)el.disabled=disabled;});document.getElementById('m-edit-btn').style.display=disabled?'':'none';document.getElementById('m-save-btn').style.display=disabled?'none':'';}function enableModalEdit(){setModalMode('edit');}function openModal(editIdx){if(!['editor','superuser'].includes(window.userRole||'viewer'))return;fillModalLists();var isEdit=(editIdx!=null);document.getElementById('m-idx').value=isEdit?editIdx:'';document.getElementById('mtitle').textContent=isEdit?'Edit Record':'Add New Record';if(isEdit){var r=rows[editIdx];document.getElementById('m-ref').value=r[1];document.getElementById('m-subject').value=r[2];document.getElementById('m-loc').value=r[3];document.getElementById('m-off').value=r[4];document.getElementById('m-act').value=r[5];document.getElementById('m-drcv').value=r[6];document.getElementById('m-dmov').value=r[7];document.getElementById('m-sla').value=r[8];document.getElementById('m-due').value=r[9];document.getElementById('m-stat').value=r[10];document.getElementById('m-flag').value=computeFlag(r);document.getElementById('m-rem').value=r[12];setModalMode('edit');}else{['m-ref','m-subject','m-sla','m-rem'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('m-drcv').value=new Date().toISOString().slice(0,10);document.getElementById('m-dmov').value='';document.getElementById('m-due').value='';document.getElementById('m-stat').value='Active';document.getElementById('m-flag').value='ON TIME';document.getElementById('m-loc').value='';document.getElementById('m-off').value='';document.getElementById('m-act').value='';setModalMode('edit');}document.getElementById('mbg').classList.add('open');}
-function closeModal(){document.getElementById('mbg').classList.remove('open');}var currentDetailIdx=null;function openDetail(idx){var r=rows[idx];currentDetailIdx=idx;document.getElementById('d-ref').textContent=r[1]||'—';document.getElementById('d-subject').textContent=r[2]||'—';document.getElementById('d-serial').textContent=(getFiltered().indexOf(r)+1)+'.';document.getElementById('d-off').textContent=r[4]||'—';document.getElementById('d-loc').textContent=r[3]||'—';document.getElementById('d-act').textContent=r[5]||'—';document.getElementById('d-drcv').textContent=fmtDate(r[6])||'—';document.getElementById('d-dmov').textContent=fmtDate(r[7])||'—';document.getElementById('d-due').textContent=fmtDate(r[9])||'—';document.getElementById('d-sla').textContent=r[8]||'—';document.getElementById('d-rem').textContent=r[12]||'—';var st=r[10]||'';var dsSt=document.getElementById('d-status');dsSt.textContent=st;dsSt.className='detail-status '+(st==='Active'?'ds-active':st==='Completed'?'ds-completed':st==='On Hold'?'ds-hold':st==='Cancelled'?'ds-cancelled':st==='Filed'?'ds-filed':'');var fl=computeFlag(r)||r[11]||'';var dsFl=document.getElementById('d-flag');dsFl.textContent=fl;dsFl.className='detail-flag '+(fl==='OVERDUE'?'df-overdue':fl==='ON TIME'?'df-ontime':'');var auditBy=document.getElementById('d-updated-by');if(auditBy)auditBy.textContent=r[13]||'—';var auditAt=document.getElementById('d-updated-at');if(auditAt){var ad=r[14]?new Date(r[14]):null;auditAt.textContent=ad?ad.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';}document.getElementById('detail-mbg').classList.add('open');gdriveSearchForRecord(r[2],r[1]);loadRecordHistory(idx);}
+function closeModal(){document.getElementById('mbg').classList.remove('open');}var currentDetailIdx=null;function openDetail(idx){var r=rows[idx];currentDetailIdx=idx;document.getElementById('d-ref').textContent=r[1]||'—';var _dsub=document.getElementById('d-subject');_dsub.textContent=r[2]||'—';_dsub.removeAttribute('href');_dsub.classList.remove('detail-subject-linked');document.getElementById('d-serial').textContent=(getFiltered().indexOf(r)+1)+'.';document.getElementById('d-off').textContent=r[4]||'—';document.getElementById('d-loc').textContent=r[3]||'—';document.getElementById('d-act').textContent=r[5]||'—';document.getElementById('d-drcv').textContent=fmtDate(r[6])||'—';document.getElementById('d-dmov').textContent=fmtDate(r[7])||'—';document.getElementById('d-due').textContent=fmtDate(r[9])||'—';document.getElementById('d-sla').textContent=r[8]||'—';document.getElementById('d-rem').textContent=r[12]||'—';var st=r[10]||'';var dsSt=document.getElementById('d-status');dsSt.textContent=st;dsSt.className='detail-status '+(st==='Active'?'ds-active':st==='Completed'?'ds-completed':st==='On Hold'?'ds-hold':st==='Cancelled'?'ds-cancelled':st==='Filed'?'ds-filed':'');var fl=computeFlag(r)||r[11]||'';var dsFl=document.getElementById('d-flag');dsFl.textContent=fl;dsFl.className='detail-flag '+(fl==='OVERDUE'?'df-overdue':fl==='ON TIME'?'df-ontime':'');var auditBy=document.getElementById('d-updated-by');if(auditBy)auditBy.textContent=r[13]||'—';var auditAt=document.getElementById('d-updated-at');if(auditAt){var ad=r[14]?new Date(r[14]):null;auditAt.textContent=ad?ad.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';}document.getElementById('detail-mbg').classList.add('open');gdriveSearchForRecord(r[2],r[1]);loadRecordHistory(idx);}
 function saveModal(){if(!['editor','superuser'].includes(window.userRole||'viewer'))return;var r=['',document.getElementById('m-ref').value.trim(),document.getElementById('m-subject').value.trim(),document.getElementById('m-loc').value,document.getElementById('m-off').value,document.getElementById('m-act').value,document.getElementById('m-drcv').value,document.getElementById('m-dmov').value,document.getElementById('m-sla').value.trim(),document.getElementById('m-due').value,document.getElementById('m-stat').value,'',document.getElementById('m-rem').value.trim()];if(!r[9]){var auto=calcDueDate(r[7],r[8]);if(auto)r[9]=auto;}r[11]=computeFlag(r);var idx=document.getElementById('m-idx').value;if(idx!=='')rows[parseInt(idx)]=r;else rows.push(r);saveData();closeModal();refresh();}
 function renderAdmin(){function draw(list,cid){var el=document.getElementById(cid);el.innerHTML='';list.forEach(function(item,i){var t=document.createElement('span');t.className='tag';t.textContent=item+' ';var x=document.createElement('button');x.className='tx';x.textContent='×';x.addEventListener('click',(function(idx){return function(){if(confirm('Remove "'+list[idx]+'"?')){list.splice(idx,1);renderAdmin();refresh();}};})(i));t.appendChild(x);el.appendChild(t);});}draw(officers,'at-officers');draw(fileIndex,'at-fileIndex');draw(statuses,'at-statuses');draw(locations,'at-locations');draw(actions,'at-actions');}
 function showAI(w){document.getElementById('ai-'+w).style.display='flex';document.getElementById('av-'+w).focus();}
@@ -61,13 +61,13 @@ function _drawCharts(){
   // ── Summary tiles ─────────────────────────────────────────────
   var sr=document.getElementById('db-stats-row');
   if(sr)sr.innerHTML=[
-    ['Total',rows.length,'db-t-total',''],
-    ['Active',sc.Active,'db-t-active','sc-active'],
-    ['Overdue',overdue,'db-t-over','sc-overdue'],
-    ['Completed',sc.Completed,'db-t-comp','sc-completed'],
-    ['On Hold',sc['On Hold'],'db-t-hold','sc-hold'],
-    ['Filed',sc.Filed,'db-t-filed','sc-filed']
-  ].map(function(t){return'<div class="db-tile '+t[2]+' '+t[3]+'"><div class="db-tile-n">'+t[1]+'</div><div class="db-tile-l">'+t[0]+'</div></div>';}).join('');
+    ['Total',    rows.length,          'db-t-total', '',           "clearFilter();showView('tracker')"],
+    ['Active',   sc.Active,            'db-t-active','sc-active',  "setStatFilter('Active','');showView('tracker')"],
+    ['Overdue',  overdue,              'db-t-over',  'sc-overdue', "setStatFilter('','OVERDUE');showView('tracker')"],
+    ['Completed',sc.Completed,         'db-t-comp',  'sc-completed',"setStatFilter('Completed','');showView('tracker')"],
+    ['On Hold',  sc['On Hold'],        'db-t-hold',  'sc-hold',    "setStatFilter('On Hold','');showView('tracker')"],
+    ['Filed',    sc.Filed,             'db-t-filed', 'sc-filed',   "setStatFilter('Filed','');showView('tracker')"]
+  ].map(function(t){return'<div class="db-tile db-tile-link '+t[2]+' '+t[3]+'" onclick="'+t[4]+'" title="View in Tracker"><div class="db-tile-n">'+t[1]+'</div><div class="db-tile-l">'+t[0]+'</div></div>';}).join('');
   // ── Donut chart (Status breakdown) ────────────────────────────
   var dCtx=document.getElementById('db-donut');if(!dCtx)return;
   if(window._dbDon)window._dbDon.destroy();
@@ -99,7 +99,8 @@ function _drawCharts(){
     odRows.map(function(r){
       var d=r[9]&&r[9].length>=8?new Date(r[9]):null;
       var days=d?Math.max(0,Math.round((new Date()-d)/86400000)):'—';
-      return'<tr><td>'+_esc(r[1])+'</td><td>'+_esc(r[2].length>60?r[2].slice(0,60)+'…':r[2])+'</td><td>'+_esc(r[4])+'</td><td>'+fmtDate(r[9])+'</td><td><span class="cdg-over">'+days+'d</span></td></tr>';
+      var ri=rows.indexOf(r);
+      return'<tr class="db-od-row" onclick="showView(\'tracker\');openDetail('+ri+')" title="Open record"><td>'+_esc(r[1])+'</td><td>'+_esc(r[2].length>60?r[2].slice(0,60)+'…':r[2])+'</td><td>'+_esc(r[4])+'</td><td>'+fmtDate(r[9])+'</td><td><span class="cdg-over">'+days+'d</span></td></tr>';
     }).join('')+'</tbody></table>';
 }
 // ── Record Change History ─────────────────────────────────────────
@@ -296,13 +297,17 @@ function gdriveSearchForRecord(subject, fileref){
   _gwithToken(async function(){
     var file=await _gsearch(subject, fileref);
     if(loading)loading.style.display='none';
+    var subjectEl=document.getElementById('d-subject');
     if(file){
       if(titleEl)titleEl.textContent=file.name.replace(/\.pdf$/i,'');
-      if(openLink)openLink.href=file.webViewLink||'#';
+      var wvl=file.webViewLink||'#';
+      if(openLink)openLink.href=wvl;
+      if(subjectEl){subjectEl.href=wvl;subjectEl.classList.add('detail-subject-linked');}
       if(frame){frame.src='https://drive.google.com/file/d/'+file.id+'/preview';frame.style.display='block';}
     }else{
       panel.style.display='none';
       if(mbox)mbox.classList.remove('detail-has-pdf');
+      if(subjectEl){subjectEl.removeAttribute('href');subjectEl.classList.remove('detail-subject-linked');}
     }
   });
 }
