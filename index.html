@@ -90,9 +90,10 @@
        <div class="app-sub">Naval Safety and Standards Branch</div></div></a>
   <div class="sp"></div>
   <div class="tabs">
-    <button class="tab on" id="tb-tracker" onclick="showView('tracker')">Tracker</button>
-    <button class="tab"    id="tb-admin"   onclick="showView('admin')">Admin Panel</button>
-    <button class="tab"    id="tb-users"   onclick="showView('users')" style="display:none">Users</button>
+    <button class="tab on" id="tb-tracker"   onclick="showView('tracker')">Tracker</button>
+    <button class="tab"    id="tb-dashboard" onclick="showView('dashboard')">&#128200; Dashboard</button>
+    <button class="tab"    id="tb-admin"     onclick="showView('admin')">Admin Panel</button>
+    <button class="tab"    id="tb-users"     onclick="showView('users')" style="display:none">Users</button>
   </div>
   <button class="btn btn-ghost" onclick="exportCSV()">&#8595; Export CSV</button>
   <button class="btn btn-gold"  onclick="openModal()">+ Add Record</button>
@@ -155,6 +156,31 @@
     <div id="nass-pager" style="display:none;align-items:center;gap:4px;margin-left:auto;flex-wrap:wrap;"></div>
   </div>
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     DASHBOARD VIEW
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="view-dashboard" style="display:none">
+  <!-- Summary stat tiles -->
+  <div class="db-stats" id="db-stats-row"></div>
+  <!-- Charts row -->
+  <div class="db-charts">
+    <div class="db-card">
+      <div class="db-card-title">Status Breakdown</div>
+      <div class="db-chart-wrap"><canvas id="db-donut"></canvas></div>
+    </div>
+    <div class="db-card db-card-wide">
+      <div class="db-card-title">Active Records by Officer</div>
+      <div class="db-chart-wrap db-chart-bar-wrap"><canvas id="db-bar"></canvas></div>
+    </div>
+  </div>
+  <!-- Overdue table -->
+  <div class="db-card db-overdue-card">
+    <div class="db-card-title">&#128680; Overdue Records</div>
+    <div id="db-overdue-list" class="db-overdue-list"></div>
+  </div>
+</div>
+
 <div id="view-admin" class="adm">
   <div class="adm-grid">
     <div class="acard"><h3>Action Officers <button class="btn btn-navy" style="font-size:11px;padding:3px 9px" onclick="showAI('officers')">+ Add</button></h3><div class="tags" id="at-officers"></div><div class="ai" id="ai-officers" style="display:none"><input type="text" id="av-officers" placeholder="Officer designation..."><button onclick="saveAI('officers')">Save</button><button onclick="hideAI('officers')" style="background:#888">Cancel</button></div></div>
@@ -267,6 +293,11 @@
     </div>
     <div class="detail-field detail-remarks-field"><span class="detail-label">Remarks</span><span class="detail-value" id="d-rem"></span></div>
     <div class="detail-audit"><span class="detail-audit-label">Last saved by:</span><span id="d-updated-by">—</span>&nbsp;&nbsp;<span class="detail-audit-label">at</span>&nbsp;<span id="d-updated-at">—</span></div>
+    <!-- Change history -->
+    <div class="dh-section">
+      <div class="dh-section-title">Change History</div>
+      <div class="dh-list" id="d-history-list"><div class="dh-empty">Opening…</div></div>
+    </div>
     <div class="mbr"><button class="mcancel" onclick="document.getElementById('detail-mbg').classList.remove('open');resetPdfExpand()">Close</button><button class="mok" onclick="document.getElementById('detail-mbg').classList.remove('open');resetPdfExpand();openModal(currentDetailIdx)">Edit</button></div>
     </div><!-- /.detail-left -->
     <div class="detail-right" id="d-pdf-panel" style="display:none">
