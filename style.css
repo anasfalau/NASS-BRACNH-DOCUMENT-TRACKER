@@ -267,6 +267,18 @@ th{position:relative}
 .pdf-zoom-btn{border:none;background:none}
 .pdf-zoom-btn:hover{background:rgba(255,255,255,0.28)}
 .pdf-zoom-lbl{font-size:10px;font-weight:700;letter-spacing:0.04em;color:rgba(255,255,255,0.8);min-width:32px;text-align:center;user-select:none}
+.pdf-expand-btn svg{display:block;pointer-events:none}
+
+/* ── PDF expand / collapse ──────────────────────────────────── */
+/* Smooth transition on the info panel so collapse feels native */
+.detail-left{transition:flex-basis 0.25s ease,max-height 0.25s ease,min-width 0.25s ease,padding 0.2s ease,border-width 0.25s ease}
+
+/* Desktop (side-by-side): collapse left panel → PDF gets full width */
+.detail-mbox.detail-has-pdf.pdf-panel-expanded .detail-left{
+  flex:0 0 0!important;min-width:0!important;max-width:0!important;
+  padding:0!important;overflow:hidden;border-right:none
+}
+.detail-mbox.detail-has-pdf.pdf-panel-expanded .detail-right{flex:1}
 
 /* ================================================================
    AI CHAT PANEL
@@ -502,6 +514,13 @@ th{position:relative}
   #d-pdf-frame{touch-action:pan-x pan-y}
   .pdf-panel-header{flex-wrap:wrap;gap:6px}
   .pdf-open-link{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:4px 10px}
+
+  /* Mobile expand: collapse the top info panel → PDF fills the modal */
+  .detail-mbox.detail-has-pdf.pdf-panel-expanded .detail-left{
+    max-height:0!important;flex:0 0 0!important;
+    padding:0!important;border-bottom:none;overflow:hidden
+  }
+  .detail-mbox.detail-has-pdf.pdf-panel-expanded .detail-right{flex:1;min-height:0}
 
   /* ── AI Chat panel: full width ──────────────────────────────── */
   #ncp-panel{left:8px;right:8px;width:auto;bottom:68px;border-radius:12px;height:clamp(340px,70vh,580px)}

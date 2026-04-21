@@ -239,7 +239,7 @@
   </div>
 </div>
 <!-- Detail View Modal -->
-<div class="mbg" id="detail-mbg" onclick="if(event.target===this)this.classList.remove('open')">
+<div class="mbg" id="detail-mbg" onclick="if(event.target===this){this.classList.remove('open');resetPdfExpand();}">
   <div class="mbox detail-mbox"><div class="detail-left">
     <div class="detail-header">
       <div class="detail-header-main">
@@ -263,7 +263,7 @@
     </div>
     <div class="detail-field detail-remarks-field"><span class="detail-label">Remarks</span><span class="detail-value" id="d-rem"></span></div>
     <div class="detail-audit"><span class="detail-audit-label">Last saved by:</span><span id="d-updated-by">—</span>&nbsp;&nbsp;<span class="detail-audit-label">at</span>&nbsp;<span id="d-updated-at">—</span></div>
-    <div class="mbr"><button class="mcancel" onclick="document.getElementById('detail-mbg').classList.remove('open')">Close</button><button class="mok" onclick="document.getElementById('detail-mbg').classList.remove('open');openModal(currentDetailIdx)">Edit</button></div>
+    <div class="mbr"><button class="mcancel" onclick="document.getElementById('detail-mbg').classList.remove('open');resetPdfExpand()">Close</button><button class="mok" onclick="document.getElementById('detail-mbg').classList.remove('open');resetPdfExpand();openModal(currentDetailIdx)">Edit</button></div>
     </div><!-- /.detail-left -->
     <div class="detail-right" id="d-pdf-panel" style="display:none">
       <div class="pdf-panel-header">
@@ -276,6 +276,12 @@
             <span id="d-pdf-zoom-lbl" class="pdf-zoom-lbl">100%</span>
             <button class="pdf-rot-btn pdf-zoom-btn" onclick="zoomPdf(+0.25)" title="Zoom in">&#43;</button>
           </span>
+          <button class="pdf-rot-btn pdf-expand-btn" id="pdf-expand-btn" onclick="togglePdfExpand()" title="Expand PDF viewer">
+            <svg id="pdf-expand-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
+          </button>
           <a id="d-pdf-open" href="#" target="_blank" class="pdf-open-link" title="Open in Google Drive">Open in Drive &#8599;</a>
         </div>
       </div>
@@ -384,10 +390,40 @@
     if (_pdfRot !== 0 || _pdfZoom !== 1) _applyPdfTransform();
   });
 
+  // ── PDF panel expand / collapse ───────────────────────────────
+  var _pdfExpanded = false;
+  var _expandSvg   = '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>';
+  var _collapseSvg = '<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>';
+
+  window.togglePdfExpand = function() {
+    var mbox = document.querySelector('.detail-mbox.detail-has-pdf');
+    if (!mbox) return;
+    _pdfExpanded = !_pdfExpanded;
+    mbox.classList.toggle('pdf-panel-expanded', _pdfExpanded);
+    var icon = document.getElementById('pdf-expand-icon');
+    var btn  = document.getElementById('pdf-expand-btn');
+    if (icon) icon.innerHTML = _pdfExpanded ? _collapseSvg : _expandSvg;
+    if (btn)  btn.title      = _pdfExpanded ? 'Restore split view' : 'Expand PDF viewer';
+    // Re-measure after transition so zoom/rotation stays accurate
+    if (_pdfRot !== 0 || _pdfZoom !== 1) setTimeout(_applyPdfTransform, 260);
+  };
+
+  window.resetPdfExpand = function() {
+    if (!_pdfExpanded) return;
+    _pdfExpanded = false;
+    var mbox = document.querySelector('.detail-mbox');
+    if (mbox) mbox.classList.remove('pdf-panel-expanded');
+    var icon = document.getElementById('pdf-expand-icon');
+    var btn  = document.getElementById('pdf-expand-btn');
+    if (icon) icon.innerHTML = _expandSvg;
+    if (btn)  btn.title      = 'Expand PDF viewer';
+  };
+
   // Reset whenever a new document is loaded — clear all inline styles
   document.addEventListener('nassDetailOpened', function() {
     _pdfRot  = 0;
     _pdfZoom = 1;
+    resetPdfExpand();
     _clearPdfFrame();
     var lbl = document.getElementById('d-pdf-zoom-lbl');
     if (lbl) lbl.textContent = '100%';
