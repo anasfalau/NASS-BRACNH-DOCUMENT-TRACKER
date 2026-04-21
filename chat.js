@@ -126,6 +126,36 @@
     window._nassAiSend();
   };
 
+  // ── Friendly error mapper ────────────────────────────────────────
+  function friendlyErr(status, raw) {
+    var s = (raw || '').toLowerCase();
+    // Credit / billing exhausted
+    if (status === 529 || status === 402 ||
+        s.indexOf('credit') !== -1 || s.indexOf('quota') !== -1 ||
+        s.indexOf('billing') !== -1 || s.indexOf('insufficient') !== -1 ||
+        s.indexOf('overloaded') !== -1 || s.indexOf('capacity') !== -1) {
+      return 'Chat unavailable. Please try again later.';
+    }
+    // Rate limited
+    if (status === 429 || s.indexOf('rate limit') !== -1 || s.indexOf('too many') !== -1) {
+      return 'Too many requests — please wait a moment and try again.';
+    }
+    // Auth
+    if (status === 401 || status === 403) {
+      return 'Session expired. Please sign in again.';
+    }
+    // Network / fetch failure
+    if (status === 0 || s.indexOf('failed to fetch') !== -1 || s.indexOf('networkerror') !== -1) {
+      return 'No connection. Check your internet and try again.';
+    }
+    // Server error
+    if (status >= 500) {
+      return 'Chat unavailable. Please try again later.';
+    }
+    // Fallback — return the raw message but trimmed
+    return raw || 'Something went wrong. Please try again.';
+  }
+
   // ── Send ─────────────────────────────────────────────────────────
   window._nassAiSend = async function () {
     if (isStreaming) return;
@@ -175,7 +205,7 @@
       if (!resp.ok) {
         var errText = await resp.text();
         try { errText = JSON.parse(errText).error || errText; } catch (e2) { /* raw text ok */ }
-        innerDiv.innerHTML = '<span class="ncp-err">&#9888; ' + escHtml(errText) + '</span>';
+        innerDiv.innerHTML = '<span class="ncp-err">&#9888; ' + escHtml(friendlyErr(resp.status, errText)) + '</span>';
         return;
       }
 
@@ -214,7 +244,7 @@
       }
 
     } catch (err) {
-      innerDiv.innerHTML = '<span class="ncp-err">&#9888; ' + escHtml(err.message) + '</span>';
+      innerDiv.innerHTML = '<span class="ncp-err">&#9888; ' + escHtml(friendlyErr(0, err.message)) + '</span>';
     } finally {
       isStreaming = false;
       setSending(false);
