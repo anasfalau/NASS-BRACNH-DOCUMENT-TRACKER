@@ -131,7 +131,7 @@
   <div class="tw">
     <table>
       <thead><tr>
-        <th onclick="doSort(0)">Serial</th>
+        <th><input type="checkbox" id="chk-all" onclick="event.stopPropagation()" onchange="toggleSelAll(this.checked)"><span onclick="doSort(0)" class="th-sort">Serial</span></th>
         <th onclick="doSort(1)" style="white-space:nowrap;width:1%">File Ref No.</th>
         <th onclick="doSort(2)" style="width:22%">Subject / Description</th>
         <th onclick="doSort(3)">Current Location</th>
@@ -435,6 +435,18 @@
 
 })();
 </script>
+<!-- Bulk status update bar -->
+<div id="bulk-bar" class="bulk-bar">
+  <span id="bulk-cnt" class="bulk-cnt">0 selected</span>
+  <span class="bulk-lbl">Set status:</span>
+  <select id="bulk-status-sel" class="bulk-sel">
+    <option value="">— choose —</option>
+    <option>Active</option><option>Completed</option>
+    <option>On Hold</option><option>Cancelled</option><option>Filed</option>
+  </select>
+  <button class="btn btn-gold" onclick="bulkUpdateStatus()">Apply</button>
+  <button class="btn bulk-cancel" onclick="clearSel()">Cancel</button>
+</div>
 <!-- AI chat FAB — static shell; chat.js lazy-loaded on first click -->
 <button id="ncp-fab" title="NASS AI Assistant" onclick="window._nassAiLaunch()" style="display:none">
   <span class="ncp-fab-icon">&#129302;</span>
