@@ -62,7 +62,8 @@ var rowIds = [];
   }
 
   await loadScript('app.js');
-  await loadScript('chat.js');
+  // chat.js is lazy-loaded on first FAB click — see _nassAiLaunch in index.html
+  if (typeof window.nassShowFab === 'function') window.nassShowFab();
   if (typeof applyRolePermissions === 'function') applyRolePermissions();
 
   // Sync rowIds with current rows

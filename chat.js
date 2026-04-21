@@ -23,10 +23,14 @@
 
   // ── Build DOM ────────────────────────────────────────────────────
   function buildUI() {
-    // Floating action button
-    const fab = el('button', { id: 'ncp-fab', title: 'NASS AI Assistant', onclick: togglePanel });
-    fab.innerHTML = '<span class="ncp-fab-icon">&#129302;</span>';
-    document.body.appendChild(fab);
+    // Floating action button — reuse static shell from index.html if present
+    var fab = document.getElementById('ncp-fab');
+    if (!fab) {
+      fab = el('button', { id: 'ncp-fab', title: 'NASS AI Assistant' });
+      fab.innerHTML = '<span class="ncp-fab-icon">&#129302;</span>';
+      document.body.appendChild(fab);
+    }
+    fab.onclick = togglePanel;
 
     // Chat panel
     const panel = el('div', { id: 'ncp-panel' });
@@ -324,4 +328,10 @@
   } else {
     buildUI();
   }
+
+  // Exposed so the lazy-loader can open the panel right after script loads
+  window._nassAiOpen = function () {
+    var panel = document.getElementById('ncp-panel');
+    if (panel && !panel.classList.contains('ncp-open')) togglePanel();
+  };
 })();

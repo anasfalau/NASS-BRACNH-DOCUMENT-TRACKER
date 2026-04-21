@@ -115,7 +115,7 @@
 <div id="view-tracker">
   <div class="stats" id="stats"></div>
   <div class="sbar">
-    <input type="text" id="srch" placeholder="Search subject, file ref, officer, remarks..." oninput="applyFilter()">
+    <input type="text" id="srch" placeholder="Search subject, file ref, officer, remarks..." oninput="srchFilter()">
     <label>Status:</label>
     <select id="f-status" onchange="applyFilter()"><option value="">All</option><option>Active</option><option>Completed</option><option>On Hold</option><option>Cancelled</option><option>Filed</option></select>
     <label>Officer:</label><select id="f-officer" onchange="applyFilter()"><option value="">All</option></select>
@@ -429,6 +429,26 @@
     if (lbl) lbl.textContent = '100%';
   });
 
+})();
+</script>
+<!-- AI chat FAB — static shell; chat.js lazy-loaded on first click -->
+<button id="ncp-fab" title="NASS AI Assistant" onclick="window._nassAiLaunch()" style="display:none">
+  <span class="ncp-fab-icon">&#129302;</span>
+</button>
+<script>
+(function(){
+  var _chatLoaded=false,_chatLoading=false;
+  // Shown only after auth (supabase-init.js calls nassShowFab())
+  window.nassShowFab=function(){var f=document.getElementById('ncp-fab');if(f)f.style.display='';};
+  window._nassAiLaunch=function(){
+    if(_chatLoaded){if(typeof window._nassAiOpen==='function')window._nassAiOpen();return;}
+    if(_chatLoading)return;
+    _chatLoading=true;
+    var s=document.createElement('script');s.src='chat.js';
+    s.onload=function(){_chatLoaded=true;_chatLoading=false;if(typeof window._nassAiOpen==='function')window._nassAiOpen();};
+    s.onerror=function(){_chatLoading=false;alert('Could not load chat module. Check your connection.');};
+    document.head.appendChild(s);
+  };
 })();
 </script>
 <script src="supabase-init.js"></script>
