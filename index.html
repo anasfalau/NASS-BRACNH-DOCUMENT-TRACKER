@@ -328,12 +328,30 @@
   document.addEventListener('DOMContentLoaded',function(){setTimeout(initResize,200)});
 
   // ── PDF Rotation + Zoom ───────────────────────────────────────
+  // Rule: at default state (rot=0, zoom=1) clear ALL inline styles and let
+  // CSS (position:absolute; width:100%; height:100%) handle sizing —
+  // this keeps the iframe fully responsive to any panel / window resize.
+  // Pixel overrides are only applied when zoom ≠ 1 OR rotation is 90/270°.
   var _pdfRot = 0, _pdfZoom = 1;
+
+  function _clearPdfFrame() {
+    var frame = document.getElementById('d-pdf-frame');
+    if (!frame) return;
+    frame.style.width = frame.style.height =
+    frame.style.left  = frame.style.top = frame.style.transform = '';
+  }
 
   function _applyPdfTransform() {
     var frame = document.getElementById('d-pdf-frame');
     var wrap  = document.getElementById('d-pdf-rotate-wrap');
     if (!frame || !wrap) return;
+    // Default: let CSS width/height:100% handle it — fully responsive
+    if (_pdfRot === 0 && _pdfZoom === 1) {
+      _clearPdfFrame();
+      var lbl = document.getElementById('d-pdf-zoom-lbl');
+      if (lbl) lbl.textContent = '100%';
+      return;
+    }
     var W = wrap.offsetWidth, H = wrap.offsetHeight;
     if (_pdfRot === 90 || _pdfRot === 270) {
       frame.style.width  = (H * _pdfZoom) + 'px';
@@ -361,18 +379,16 @@
     _applyPdfTransform();
   };
 
-  // Reset rotation + zoom whenever a new document is loaded
+  // Re-apply on resize (orientation change, panel resize, etc.)
+  window.addEventListener('resize', function() {
+    if (_pdfRot !== 0 || _pdfZoom !== 1) _applyPdfTransform();
+  });
+
+  // Reset whenever a new document is loaded — clear all inline styles
   document.addEventListener('nassDetailOpened', function() {
     _pdfRot  = 0;
     _pdfZoom = 1;
-    var frame = document.getElementById('d-pdf-frame');
-    var wrap  = document.getElementById('d-pdf-rotate-wrap');
-    if (!frame || !wrap) return;
-    frame.style.transform = 'rotate(0deg)';
-    frame.style.width     = wrap.offsetWidth  + 'px';
-    frame.style.height    = wrap.offsetHeight + 'px';
-    frame.style.left      = '0px';
-    frame.style.top       = '0px';
+    _clearPdfFrame();
     var lbl = document.getElementById('d-pdf-zoom-lbl');
     if (lbl) lbl.textContent = '100%';
   });
