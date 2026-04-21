@@ -44,8 +44,26 @@ var rowIds = [];
   // Pull latest data from Supabase, then load app
   try {
   await pullData(sb);
+
+  // Resolve the calling user's role from nass_profiles
+  const { data: profile } = await sb
+    .from('nass_profiles')
+    .select('role, display_name')
+    .eq('user_id', session.user.id)
+    .maybeSingle();
+  window.userRole    = profile?.role || 'viewer';
+  window.userSession = session;
+
+  // ── Force password change for newly-invited users ─────────────
+  if (session.user.user_metadata?.must_change_password) {
+    hide('nass-loading');
+    showChangePasswordModal(sb);
+    return;
+  }
+
   await loadScript('app.js');
   await loadScript('chat.js');
+  if (typeof applyRolePermissions === 'function') applyRolePermissions();
 
   // Sync rowIds with current rows
   rowIds = JSON.parse(localStorage.getItem('nassRowIds') || '[]');
@@ -117,6 +135,8 @@ var rowIds = [];
   // Show topbar user info and reveal the app
   const userEl = document.getElementById('nass-user-email');
   if (userEl) userEl.textContent = session.user.email;
+  const avatarEl = document.getElementById('nass-user-avatar');
+  if (avatarEl) avatarEl.textContent = (session.user.email || '?')[0].toUpperCase();
   show('nass-user-wrap');
 
   } catch (err) {
@@ -362,6 +382,47 @@ function initGoogleTokenPersistence() {
       console.log('[Drive] New token saved to storage');
     }
   }, 3000);
+}
+
+// ── Force-password-change modal ─────────────────────────────────
+function showChangePasswordModal(sb) {
+  const modal = document.getElementById('nass-pwchange');
+  if (modal) modal.style.display = 'flex';
+
+  document.getElementById('nass-pwchange-form')
+    .addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const pw1   = document.getElementById('nass-pw1').value;
+      const pw2   = document.getElementById('nass-pw2').value;
+      const errEl = document.getElementById('nass-pwchange-err');
+      const btn   = document.getElementById('nass-pwchange-btn');
+      errEl.textContent = '';
+
+      if (pw1.length < 8) {
+        errEl.textContent = 'Password must be at least 8 characters.';
+        return;
+      }
+      if (pw1 !== pw2) {
+        errEl.textContent = 'Passwords do not match.';
+        return;
+      }
+
+      btn.disabled    = true;
+      btn.textContent = 'Saving…';
+
+      const { error } = await sb.auth.updateUser({
+        password: pw1,
+        data: { must_change_password: false }
+      });
+
+      if (error) {
+        errEl.textContent = error.message;
+        btn.disabled    = false;
+        btn.textContent = 'Set New Password';
+      } else {
+        window.location.reload();
+      }
+    });
 }
 
 // ── Auth helpers ────────────────────────────────────────────────
