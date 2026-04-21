@@ -6,8 +6,8 @@
 //    • Offline fallback → serve cached index.html + post message
 // ================================================================
 
-const CACHE   = 'nass-tracker-v4';
-const OFFLINE = 'nass-offline-v4';
+const CACHE   = 'nass-tracker-v5';
+const OFFLINE = 'nass-offline-v5';
 
 const APP_SHELL = [
   './',
@@ -60,7 +60,12 @@ self.addEventListener('fetch', event => {
       const networkFetch = fetch(event.request)
         .then(resp => {
           if (resp && resp.status === 200 && resp.type === 'basic') {
-            caches.open(CACHE).then(c => c.put(event.request, resp.clone()));
+            // Clone synchronously — BEFORE returning resp so the body isn't
+            // consumed by the browser before we hand the clone to the cache.
+            try {
+              const toCache = resp.clone();
+              caches.open(CACHE).then(c => c.put(event.request, toCache));
+            } catch (e) { /* body already used — skip cache update */ }
           }
           return resp;
         })
