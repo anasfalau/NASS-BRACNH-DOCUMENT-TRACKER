@@ -362,12 +362,16 @@ th{position:relative}
 @media (max-width:640px){
 
   /* ── Topbar: 2-row layout ───────────────────────────────────── */
+  /* NOTE: <a> has display:contents so order on it is ignored — the inner
+     <div> is the real flex item. We rely on DOM order (logo first, then
+     the inner div) and give neither an explicit order so the browser
+     keeps them in markup sequence: logo ← left, title ← right of logo. */
   .topbar{height:auto;flex-wrap:wrap;padding:7px 12px 0;column-gap:8px}
-  .topbar-logo{height:30px;order:1;flex-shrink:0}
-  .topbar>a{order:2;flex:1;min-width:0;overflow:hidden}
+  .topbar-logo{height:30px;flex-shrink:0}       /* order:0, first in DOM  */
+  .topbar>a>div{flex:1;min-width:0;overflow:hidden} /* real flex item via display:contents */
   .app-title{font-size:10.5px;letter-spacing:0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .sp{order:3}
-  #nass-user-wrap{order:4;border-left:none!important;margin-left:0!important;padding-left:0!important;gap:5px}
+  /* sp keeps order:0 — sits after logo+title in DOM, pushes user-wrap right */
+  #nass-user-wrap{order:5;border-left:none!important;margin-left:0!important;padding-left:0!important;gap:5px}
   .user-info{display:none}
   .btn-signout-text{display:none}
   .btn-signout{padding:5px 8px;gap:0}
