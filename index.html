@@ -3,12 +3,60 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#002655">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NASS Tracker">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="NN-logo-transparent.png">
 <title>NASS Branch &mdash; Workflow Tracker</title>
-<link rel="stylesheet" href="style.css?v=20260420">
+<link rel="stylesheet" href="style.css?v=20260422">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+<!-- Offline banner -->
+<div id="offline-banner" style="display:none">
+  <span>&#128268; You&#39;re offline &mdash; showing cached data. Changes will sync when reconnected.</span>
+  <button onclick="document.getElementById('offline-banner').style.display='none'" aria-label="Dismiss">&#10005;</button>
+</div>
+<script>
+// ── Service Worker registration ───────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').then(function (reg) {
+      // When a new SW is waiting, prompt update on next visit
+      reg.addEventListener('updatefound', function () {
+        var nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', function () {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            // New content available — send skip-waiting, page will reload
+            nw.postMessage('SKIP_WAITING');
+            window.location.reload();
+          }
+        });
+      });
+    }).catch(function (e) { console.warn('SW registration failed:', e); });
+  });
+}
+// ── Offline / online banner ───────────────────────────────────────
+(function () {
+  var banner = null;
+  function show () {
+    if (!banner) banner = document.getElementById('offline-banner');
+    if (banner) banner.style.display = 'flex';
+  }
+  function hide () {
+    if (!banner) banner = document.getElementById('offline-banner');
+    if (banner) banner.style.display = 'none';
+  }
+  window.addEventListener('offline', show);
+  window.addEventListener('online',  hide);
+  if (!navigator.onLine) show();
+})();
+</script>
 
 <!-- ── Loading Overlay ───────────────────────────────────────── -->
 <div id="nass-loading" style="display:flex;position:fixed;inset:0;background:linear-gradient(135deg,#002655,#004080);z-index:2000;align-items:center;justify-content:center;flex-direction:column;gap:14px">

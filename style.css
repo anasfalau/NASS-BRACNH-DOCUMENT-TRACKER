@@ -23,6 +23,11 @@
   --ease-std:0.15s;--ease-pdf:0.3s;
 }
 
+/* === OFFLINE BANNER === */
+#offline-banner{display:none;align-items:center;justify-content:center;gap:12px;padding:8px 16px;background:#7a3030;color:#fff;font-size:12px;font-weight:500;text-align:center;flex-wrap:wrap;z-index:9999;position:relative}
+#offline-banner button{background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.35);color:#fff;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:12px;flex-shrink:0}
+#offline-banner button:hover{background:rgba(255,255,255,0.30)}
+
 /* === RESET & BASE === */
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font-sans);font-size:13px;background:var(--bg-app);color:var(--fg-ink)}
@@ -677,7 +682,7 @@ th{position:relative}
 @media print{
   /* Hide interactive chrome */
   .topbar,.sbar,.bbar,#ncp-fab,#ncp-panel,#nass-login,#nass-pwchange,
-  #mbg,#detail-mbg,.bulk-bar,.cvp-wrap,#nass-pager,
+  #mbg,#detail-mbg,.bulk-bar,.cvp-wrap,#nass-pager,#offline-banner,
   .act-cell,.btn-gold,.btn-navy,.btn-clear,#rc{display:none!important}
   /* Full-width layout */
   body{background:#fff;font-size:11pt}
