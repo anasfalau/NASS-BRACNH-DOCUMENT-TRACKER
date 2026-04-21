@@ -123,6 +123,10 @@
     <select id="f-delay" onchange="applyFilter()"><option value="">All</option><option value="OVERDUE">Overdue</option><option value="ON TIME">On time</option></select>
     <button class="btn btn-clear" onclick="clearFilter()">Clear</button>
     <span id="fc" style="font-size:12px;color:#888"></span>
+    <div class="cvp-wrap">
+      <button id="col-vis-btn" class="btn btn-col-vis" onclick="toggleColVisPop()" title="Show/hide columns">&#9881; Columns</button>
+      <div id="col-vis-pop" class="cvp"></div>
+    </div>
   </div>
   <div class="tw">
     <table>
