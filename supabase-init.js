@@ -416,13 +416,27 @@ function showChangePasswordModal(sb) {
       });
 
       if (error) {
-        errEl.textContent = error.message;
+        errEl.textContent = friendlyAuthErr(error.message);
         btn.disabled    = false;
         btn.textContent = 'Set New Password';
       } else {
         window.location.reload();
       }
     });
+}
+
+// ── Auth error → friendly message ───────────────────────────────
+function friendlyAuthErr(msg) {
+  const s = (msg || '').toLowerCase();
+  if (s.includes('failed to fetch') || s.includes('networkerror') || s.includes('name_not_resolved'))
+    return 'Unable to connect. Check your internet connection and try again.';
+  if (s.includes('invalid login') || s.includes('invalid credentials') || s.includes('email not confirmed'))
+    return 'Incorrect email or password.';
+  if (s.includes('too many') || s.includes('rate limit'))
+    return 'Too many attempts — please wait a moment and try again.';
+  if (s.includes('user not found') || s.includes('no user'))
+    return 'No account found with that email address.';
+  return msg || 'Sign-in failed. Please try again.';
 }
 
 // ── Auth helpers ────────────────────────────────────────────────
@@ -439,7 +453,7 @@ function bindLoginForm(sb) {
       btn.textContent = 'Signing in…';
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) {
-        errEl.textContent = error.message;
+        errEl.textContent = friendlyAuthErr(error.message);
         btn.disabled    = false;
         btn.textContent = 'Sign In';
       } else {
