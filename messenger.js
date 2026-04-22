@@ -497,7 +497,7 @@ async function _startDM(u){
   }catch(e){console.warn('[MS] find DM',e);}
   // Create new DM
   try{
-    var cr=await _sb.from('nass_conversations').insert({type:'direct'}).select().single();
+    var cr=await _sb.from('nass_conversations').insert({type:'direct',created_by:_myId||null}).select().single();
     if(cr.error)throw cr.error;
     var cid=cr.data.id;
     await _sb.from('nass_conv_members').insert([
@@ -569,7 +569,7 @@ async function _createGroup(){
   _closeGrpModal();
   await _ensureId();
   try{
-    var cr=await _sb.from('nass_conversations').insert({type:'group',name:name}).select().single();
+    var cr=await _sb.from('nass_conversations').insert({type:'group',name:name,created_by:_myId||null}).select().single();
     if(cr.error)throw cr.error;
     var cid=cr.data.id;
     var members=[{conversation_id:cid,user_id:_myId,user_email:_myEmail}];
