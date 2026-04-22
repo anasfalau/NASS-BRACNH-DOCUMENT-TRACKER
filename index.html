@@ -11,11 +11,12 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="NN-logo-transparent.png">
 <title>NASS Branch &mdash; Workflow Tracker</title>
-<link rel="stylesheet" href="style.css?v=20260422">
+<link rel="stylesheet" href="style.css?v=20260426">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+<script>if(localStorage.getItem('nassDark')==='1')document.body.classList.add('dark');</script>
 <!-- Offline banner -->
 <div id="offline-banner" style="display:none">
   <span>&#128268; You&#39;re offline &mdash; showing cached data. Changes will sync when reconnected.</span>
@@ -145,6 +146,8 @@ if ('serviceWorker' in navigator) {
     <button class="tab"    id="tb-kanban"    onclick="showView('kanban')">&#9783; Kanban</button>
     <button class="tab"    id="tb-audit"     onclick="showView('audit')" style="display:none">&#128203; Activity Log</button>
   </div>
+  <button class="btn btn-ghost dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Toggle dark mode">&#9790;</button>
+  <button class="btn btn-ghost" id="ms-btn" onclick="window._nassMsLaunch()" title="Open Messenger" style="display:none">&#128172; Chat</button>
   <button class="btn btn-ghost" onclick="exportCSV()">&#8595; Export CSV</button>
   <button class="btn btn-ghost" id="btn-report" onclick="exportReport()" title="Generate formal report (current filters)">&#128196; Report</button>
   <button class="btn btn-gold"  onclick="openModal()">+ Add Record</button>
@@ -587,7 +590,26 @@ if ('serviceWorker' in navigator) {
 (function(){
   var _chatLoaded=false,_chatLoading=false;
   // Shown only after auth (supabase-init.js calls nassShowFab())
-  window.nassShowFab=function(){var f=document.getElementById('ncp-fab');if(f)f.style.display='';};
+  window.nassShowFab=function(){
+    var f=document.getElementById('ncp-fab');if(f)f.style.display='';
+    var m=document.getElementById('ms-btn');if(m)m.style.display='';
+  };
+  // ── Messenger lazy-loader ─────────────────────────────────────
+  var _msLoaded=false,_msLoading=false;
+  window._nassMsLaunch=function(){
+    if(_msLoaded){
+      var p=document.getElementById('ms-panel');
+      if(p&&p.classList.contains('ms-open')){window._nassMsClose();}
+      else if(typeof window._nassMsOpen==='function'){window._nassMsOpen();}
+      return;
+    }
+    if(_msLoading)return;
+    _msLoading=true;
+    var s=document.createElement('script');s.src='messenger.js?v=20260426d';
+    s.onload=function(){_msLoaded=true;_msLoading=false;if(typeof window._nassMsOpen==='function')window._nassMsOpen();};
+    s.onerror=function(){_msLoading=false;alert('Could not load messenger. Check your connection.');};
+    document.head.appendChild(s);
+  };
   window._nassAiLaunch=function(){
     if(_chatLoaded){if(typeof window._nassAiOpen==='function')window._nassAiOpen();return;}
     if(_chatLoading)return;
