@@ -293,9 +293,10 @@ th{position:relative}
    AI CHAT PANEL
    ================================================================ */
 
-/* Messenger FAB */
-#ncp-fab{position:fixed;bottom:24px;right:24px;z-index:903;width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;background:var(--grad-topbar);color:#fff;box-shadow:0 4px 18px rgba(0,38,85,0.45);display:flex;align-items:center;justify-content:center;transition:transform 0.2s,box-shadow 0.2s;padding:0;overflow:visible}
-#ncp-fab:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(0,38,85,0.55)}
+/* Messenger FAB — draggable */
+#ncp-fab{position:fixed;bottom:24px;right:24px;z-index:903;width:54px;height:54px;border-radius:50%;border:none;cursor:grab;background:var(--grad-topbar);color:#fff;box-shadow:0 4px 18px rgba(0,38,85,0.45);display:flex;align-items:center;justify-content:center;transition:box-shadow 0.2s;padding:0;overflow:visible;touch-action:none}
+#ncp-fab:hover{box-shadow:0 6px 24px rgba(0,38,85,0.55);filter:brightness(1.08)}
+#ncp-fab:active{cursor:grabbing}
 #ncp-fab.ms-btn-on{background:linear-gradient(135deg,var(--nass-navy-400),var(--nass-navy-700));box-shadow:0 0 0 3px rgba(255,255,255,0.25),0 6px 24px rgba(0,38,85,0.55)}
 #ncp-fab .ms-badge{position:absolute;top:-4px;right:-4px}
 .ncp-fab-icon{font-size:26px;line-height:1}
@@ -923,6 +924,8 @@ td:has(.stat-inl):hover .stat-inl{background:var(--bg-row-hover);text-decoration
    MESSENGER PANEL
    ================================================================ */
 .ms-panel{position:fixed;bottom:96px;right:24px;width:clamp(520px,44vw,660px);height:clamp(420px,72vh,660px);background:var(--bg-card);border-radius:var(--radius-lg-card);box-shadow:0 24px 60px rgba(0,0,0,0.28),0 4px 16px rgba(0,0,0,0.12);z-index:902;display:none;flex-direction:row;overflow:hidden;border:1px solid var(--border-soft);resize:both;min-width:420px;min-height:340px}
+/* Visible resize gripper at bottom-right corner */
+.ms-panel::after{content:'';position:absolute;bottom:3px;right:3px;width:14px;height:14px;background:repeating-linear-gradient(135deg,var(--border-default) 0px,var(--border-default) 1px,transparent 1px,transparent 4px);border-radius:0 0 var(--radius-lg-card) 0;pointer-events:none;opacity:0.5;z-index:10}
 .ms-panel.ms-open{display:flex}
 
 /* ── Back button (mobile only, shown via @media) ── */
