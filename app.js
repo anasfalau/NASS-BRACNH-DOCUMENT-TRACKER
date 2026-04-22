@@ -22,7 +22,7 @@ function clearSel(){selRows=new Set();updateBulkBar();var ca=document.getElement
 function buildRow(r,vi,ri){var tr=document.createElement('tr');function td(){var x=document.createElement('td');tr.appendChild(x);return x;}var s0=td();var _chk=document.createElement('input');_chk.type='checkbox';_chk.className='row-chk';_chk.dataset.ri=ri;if(selRows.has(ri)){_chk.checked=true;tr.classList.add('row-selected');}_chk.addEventListener('change',(function(_ri,_tr){return function(){if(this.checked){selRows.add(_ri);_tr.classList.add('row-selected');}else{selRows.delete(_ri);_tr.classList.remove('row-selected');}updateBulkBar();};})(ri,tr));s0.appendChild(_chk);s0.appendChild(document.createTextNode('\u00a0'+(vi+1)+'.'));var s1=td();s1.textContent=r[1]||'';var s2=td();s2.textContent=r[2]||'';s2.addEventListener('click',(function(idx){return function(){openDetail(idx);};})(ri));var s3=td();s3.textContent=r[3]||'';var s4=td();s4.textContent=r[4]||'';var s5=td();s5.textContent=r[5]||'';var s6=td();s6.textContent=fmtDate(r[6]);var s7=td();s7.textContent=fmtDate(r[7]);var s8=td();s8.textContent=r[8]||'';var s9=td();s9.textContent=fmtDate(r[9]);var fl=computeFlag(r);tr.className=sc(r[10])+(fl==='OVERDUE'?' row-overdue':'');var s10=td();if(['editor','superuser'].includes(window.userRole||'viewer')){s10.style.cursor='pointer';s10.title='Click to change status';var _stSp=document.createElement('span');_stSp.textContent=r[10]||'—';_stSp.className='stat-inl';s10.appendChild(_stSp);s10.addEventListener('click',(function(_ri,_r,_sp,_sd){return function(e){e.stopPropagation();if(_sd.querySelector('select'))return;var _old=_r[10];var _sel=mkSel(statuses,_r[10],async function(){if(_sel.value&&_sel.value!==_old){_r[10]=_sel.value;_sp.textContent=_r[10];await saveData();refresh();}while(_sd.firstChild)_sd.removeChild(_sd.firstChild);_sd.appendChild(_sp);});_sel.className='inline-stat-sel';_sel.addEventListener('blur',function(){setTimeout(function(){while(_sd.firstChild)_sd.removeChild(_sd.firstChild);_sd.appendChild(_sp);},150);});while(_sd.firstChild)_sd.removeChild(_sd.firstChild);_sd.appendChild(_sel);_sel.focus();};})(ri,r,_stSp,s10));}else{s10.textContent=r[10]||'';}var s11=td();var _td=new Date();_td.setHours(0,0,0,0);var _dd=r[9]&&r[9].length>=8?new Date(r[9]):null;if(_dd)_dd.setHours(0,0,0,0);var _df=_dd?Math.round((_dd-_td)/86400000):null;var _fin=['completed','filed','cancelled'].includes((r[10]||'').toLowerCase());if(fl==='OVERDUE'&&!_fin&&_df!==null){s11.innerHTML='<span class="cdg-over">'+Math.abs(_df)+' day'+(Math.abs(_df)===1?'':'s')+' overdue</span>';}else if(fl==='ON TIME'&&!_fin&&_df!==null&&_df>=0&&_df<=7){s11.innerHTML='<span class="'+(_df<=3?'cdg-urgent':'cdg-warn')+'">'+_df+' day'+(_df===1?'':'s')+' left</span>';}else{s11.className=fl==='OVERDUE'?'flag-overdue':fl==='ON TIME'?'flag-ontime':'';s11.textContent=fl;}var s12=td();s12.textContent=r[12]||'';var sdel=td();sdel.className='act-cell';var vb=document.createElement('button');vb.className='view-btn';vb.textContent='View';vb.addEventListener('click',(function(idx){return function(){openDetail(idx);};})(ri));sdel.appendChild(vb);var eb=document.createElement('button');eb.className='edit-btn';eb.textContent='Edit';eb.addEventListener('click',(function(idx){return function(){openModal(idx);};})(ri));if(!['editor','superuser'].includes(window.userRole||'viewer'))eb.style.display='none';sdel.appendChild(eb);var db=document.createElement('button');db.className='del';db.title='Delete record';db.innerHTML='<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="1.5" y1="1.5" x2="9.5" y2="9.5"/><line x1="9.5" y1="1.5" x2="1.5" y2="9.5"/></svg>';db.addEventListener('click',(function(idx){return function(){if(confirm('Delete this record?')){rows.splice(idx,1);saveData();refresh();}};})(ri));if((window.userRole||'viewer')!=='superuser')db.style.display='none';sdel.appendChild(db);return tr;}
 var PAGE_SIZE=10;var currentPage=99999;function renderTable(data){var tb=document.getElementById('tbody');tb.innerHTML='';var totalPages=Math.max(1,Math.ceil(data.length/PAGE_SIZE));if(currentPage>totalPages)currentPage=totalPages;var start=(currentPage-1)*PAGE_SIZE,end=Math.min(start+PAGE_SIZE,data.length);for(var vi=start;vi<end;vi++){tb.appendChild(buildRow(data[vi],vi,rows.indexOf(data[vi])));}document.getElementById('rc').textContent=data.length+' / '+rows.length+' records';renderPager(data.length,totalPages);}function renderPager(total,totalPages){var el=document.getElementById('nass-pager');if(!el)return;if(total<=PAGE_SIZE){el.style.display='none';return;}el.style.display='flex';var html='';html+='<button class="pg-btn pg-arrow"'+( currentPage===1?' disabled':'' )+' onclick="goPage(-1)">&#8592; Prev</button>';var win=10,half=Math.floor(win/2);var lo=Math.max(1,currentPage-half);var hi=Math.min(totalPages,lo+win-1);lo=Math.max(1,hi-win+1);for(var p=lo;p<=hi;p++){var active=(p===currentPage)?' pg-active':'';html+='<button class="pg-btn'+active+'" onclick="jumpPage('+p+')">'+p+'</button>';}html+='<button class="pg-btn pg-arrow"'+( currentPage===totalPages?' disabled':'' )+' onclick="goPage(1)">Next &#8594;</button>';el.innerHTML=html;}function goPage(dir){var data=getFiltered();var totalPages=Math.max(1,Math.ceil(data.length/PAGE_SIZE));currentPage=Math.min(Math.max(currentPage+dir,1),totalPages);renderTable(data);}function jumpPage(p){currentPage=p;renderTable(getFiltered());}
 function setStatFilter(fst,fdl){document.getElementById('f-status').value=fst;document.getElementById('f-delay').value=fdl;currentPage=1;applyFilter();}
-function renderStats(){var tot=rows.length,act=0,comp=0,od=0,hold=0,canc=0,filed=0;rows.forEach(function(r){var s=(r[10]||'').toLowerCase();if(s==='active')act++;else if(s==='completed')comp++;else if(s==='on hold')hold++;else if(s==='cancelled')canc++;else if(s==='filed')filed++;if(computeFlag(r)==='OVERDUE')od++;});function tile(n,lbl,tcls,ncls,fst,fdl){return'<div class="sc '+tcls+' sc-link" onclick="setStatFilter(\''+fst+'\',\''+fdl+'\')" title="Click to filter by '+lbl+'"><div class="sn '+(ncls||'')+'">'+n+'</div><div class="sl">'+lbl+'</div></div>';}document.getElementById('stats').innerHTML=tile(tot,'Total','','','','')+tile(act,'Active','sc-active','','Active','')+tile(comp,'Completed','sc-completed','g','Completed','')+tile(od,'Overdue','sc-overdue','r','','OVERDUE')+tile(hold,'On Hold','sc-hold','a','On Hold','')+tile(canc,'Cancelled','sc-cancelled','c','Cancelled','')+tile(filed,'Filed','sc-filed','f','Filed','');}
+function renderStats(){var tot=rows.length,act=0,comp=0,od=0,hold=0,canc=0,filed=0;rows.forEach(function(r){var s=(r[10]||'').toLowerCase();if(s==='active')act++;else if(s==='completed')comp++;else if(s==='on hold')hold++;else if(s==='cancelled')canc++;else if(s==='filed')filed++;if(computeFlag(r)==='OVERDUE')od++;});function tile(n,lbl,tcls,ncls,fst,fdl){return'<div class="sc '+tcls+' sc-link" onclick="setStatFilter(\''+fst+'\',\''+fdl+'\')" title="Click to filter by '+lbl+'"><div class="sn '+(ncls||'')+'">'+n+'</div><div class="sl">'+lbl+'</div></div>';}document.getElementById('stats').innerHTML=tile(tot,'Total','','','','')+tile(act,'Active','sc-active','','Active','')+tile(comp,'Completed','sc-completed','g','Completed','')+tile(od,'Overdue','sc-overdue','r','','OVERDUE')+tile(hold,'On Hold','sc-hold','a','On Hold','')+tile(canc,'Cancelled','sc-cancelled','c','Cancelled','')+tile(filed,'Filed','sc-filed','f','Filed','');var _tbd=document.getElementById('tb-dashboard');if(_tbd){var _db=_tbd.querySelector('.tab-badge');if(!_db&&od>0){_db=document.createElement('span');_db.className='tab-badge';_tbd.appendChild(_db);}if(_db){if(od>0){_db.textContent=od;_db.style.display='';}else{_db.style.display='none';}}}}
 function getFiltered(){var q=(document.getElementById('srch').value||'').toLowerCase();var fst=document.getElementById('f-status').value;var fof=document.getElementById('f-officer').value;var fdl=document.getElementById('f-delay').value;var _ffrom=(document.getElementById('f-from')||{}).value||'';var _fto=(document.getElementById('f-to')||{}).value||'';var d=rows.filter(function(r){if(q&&!(r[0]+' '+r[1]+' '+r[2]+' '+r[3]+' '+r[4]+' '+r[12]).toLowerCase().includes(q))return false;if(fst&&r[10]!==fst)return false;if(fof&&r[4]!==fof)return false;if(fdl&&computeFlag(r)!==fdl)return false;if(_ffrom&&r[6]&&r[6]<_ffrom)return false;if(_fto&&r[6]&&r[6]>_fto)return false;return true;});if(sortCol>=0)d.sort(function(a,b){var av=a[sortCol]||'',bv=b[sortCol]||'';return sortAsc?av.localeCompare(bv):bv.localeCompare(av);});document.getElementById('fc').textContent=d.length<rows.length?'Showing '+d.length+' of '+rows.length:'';return d;}
 function applyFilter(){var _d=getFiltered();currentPage=Math.max(1,Math.ceil(_d.length/PAGE_SIZE));renderTable(_d);}
 var _srchDeb=0;function srchFilter(){clearTimeout(_srchDeb);_srchDeb=setTimeout(applyFilter,200);}
@@ -38,7 +38,7 @@ function renderAdmin(){function draw(list,cid){var el=document.getElementById(ci
 function showAI(w){document.getElementById('ai-'+w).style.display='flex';document.getElementById('av-'+w).focus();}
 function hideAI(w){document.getElementById('ai-'+w).style.display='none';document.getElementById('av-'+w).value='';}
 function saveAI(w){var v=document.getElementById('av-'+w).value.trim();if(!v)return;var L=w==='officers'?officers:w==='fileIndex'?fileIndex:w==='statuses'?statuses:w==='locations'?locations:actions;if(!L.includes(v))L.push(v);saveData();hideAI(w);renderAdmin();refresh();}
-function showView(v){if((v==='admin'||v==='users')&&(window.userRole||'viewer')!=='superuser')return;if(v==='audit'&&!['editor','superuser'].includes(window.userRole||'viewer'))return;document.getElementById('tb-tracker').classList.toggle('on',v==='tracker');var tbd=document.getElementById('tb-dashboard');if(tbd)tbd.classList.toggle('on',v==='dashboard');document.getElementById('tb-admin').classList.toggle('on',v==='admin');var tbu=document.getElementById('tb-users');if(tbu)tbu.classList.toggle('on',v==='users');var tba=document.getElementById('tb-audit');if(tba)tba.classList.toggle('on',v==='audit');document.getElementById('view-tracker').style.display=v==='tracker'?'block':'none';var vd=document.getElementById('view-dashboard');if(vd)vd.style.display=v==='dashboard'?'block':'none';document.getElementById('view-admin').style.display=v==='admin'?'flex':'none';var vu=document.getElementById('view-users');if(vu)vu.style.display=v==='users'?'block':'none';var va=document.getElementById('view-audit');if(va)va.style.display=v==='audit'?'block':'none';if(v==='admin')renderAdmin();if(v==='users')loadUsersPanel();if(v==='dashboard')renderDashboard();if(v==='audit')loadAuditLog(1);}
+function showView(v){if((v==='admin'||v==='users')&&(window.userRole||'viewer')!=='superuser')return;if(v==='audit'&&!['editor','superuser'].includes(window.userRole||'viewer'))return;document.getElementById('tb-tracker').classList.toggle('on',v==='tracker');var tbd=document.getElementById('tb-dashboard');if(tbd)tbd.classList.toggle('on',v==='dashboard');document.getElementById('tb-admin').classList.toggle('on',v==='admin');var tbu=document.getElementById('tb-users');if(tbu)tbu.classList.toggle('on',v==='users');var tba=document.getElementById('tb-audit');if(tba)tba.classList.toggle('on',v==='audit');var tbk=document.getElementById('tb-kanban');if(tbk)tbk.classList.toggle('on',v==='kanban');document.getElementById('view-tracker').style.display=v==='tracker'?'block':'none';var vd=document.getElementById('view-dashboard');if(vd)vd.style.display=v==='dashboard'?'block':'none';document.getElementById('view-admin').style.display=v==='admin'?'flex':'none';var vu=document.getElementById('view-users');if(vu)vu.style.display=v==='users'?'block':'none';var va=document.getElementById('view-audit');if(va)va.style.display=v==='audit'?'block':'none';var vk=document.getElementById('view-kanban');if(vk)vk.style.display=v==='kanban'?'block':'none';if(v==='admin')renderAdmin();if(v==='users')loadUsersPanel();if(v==='dashboard'){renderDashboard();var _db=document.querySelector('#tb-dashboard .tab-badge');if(_db)_db.style.display='none';}if(v==='audit')loadAuditLog(1);if(v==='kanban')renderKanban();}
 // ── Dashboard ─────────────────────────────────────────────────────
 var _chartJsLoaded=false;
 function renderDashboard(){
@@ -375,4 +375,145 @@ async function loadAuditLog(p){
       pg.innerHTML=ph;
     }
   }catch(e){var tb=document.getElementById('al-tbody');if(tb)tb.innerHTML='<tr><td colspan="5" style="color:var(--signal-danger);padding:14px">Error loading activity log: '+_esc(e.message)+'</td></tr>';}
+}
+
+// ── Kanban Board ──────────────────────────────────────────────────
+function renderKanban(){
+  var board=document.getElementById('kb-board');
+  if(!board)return;
+  var lanes=['Active','On Hold','Completed','Filed','Cancelled'];
+  var laneClrs={'Active':'#0055aa','On Hold':'#c8a400','Completed':'#1a7a3c','Filed':'#5a2d9a','Cancelled':'#b81c2e'};
+  board.innerHTML='';
+  var isEd=['editor','superuser'].includes(window.userRole||'viewer');
+  lanes.forEach(function(status){
+    var recs=rows.map(function(r,i){return{r:r,i:i};}).filter(function(x){return x.r[10]===status;});
+    var col=document.createElement('div');col.className='kb-col';
+    var head=document.createElement('div');head.className='kb-col-head';
+    head.style.borderBottomColor=laneClrs[status]||'#ccc';
+    head.innerHTML='<span class="kb-col-title">'+_esc(status)+'</span><span class="kb-col-cnt">'+recs.length+'</span>';
+    col.appendChild(head);
+    var body=document.createElement('div');body.className='kb-col-body';
+    if(!recs.length){var emp=document.createElement('div');emp.className='kb-empty';emp.textContent='No records';body.appendChild(emp);}
+    recs.forEach(function(x){
+      var r=x.r,ri=x.i;
+      var fl=computeFlag(r);
+      var isOver=fl==='OVERDUE'&&!['Completed','Filed','Cancelled'].includes(r[10]||'');
+      var _td2=new Date();_td2.setHours(0,0,0,0);
+      var _dd2=r[9]&&r[9].length>=8?new Date(r[9]):null;if(_dd2)_dd2.setHours(0,0,0,0);
+      var dLeft=_dd2?Math.round((_dd2-_td2)/86400000):null;
+      var card=document.createElement('div');card.className='kb-card'+(isOver?' kb-overdue':'');
+      var refEl=document.createElement('div');refEl.className='kb-card-ref';refEl.textContent=r[1]||'—';
+      refEl.onclick=(function(idx){return function(){openDetail(idx);};})(ri);card.appendChild(refEl);
+      var subEl=document.createElement('div');subEl.className='kb-card-sub';
+      subEl.textContent=(r[2]||'').slice(0,90)+((r[2]||'').length>90?'…':'');
+      subEl.onclick=(function(idx){return function(){openDetail(idx);};})(ri);card.appendChild(subEl);
+      var metaEl=document.createElement('div');metaEl.className='kb-card-meta';
+      var offSpan=document.createElement('span');offSpan.className='kb-card-officer';offSpan.textContent=r[4]||'—';metaEl.appendChild(offSpan);
+      if(isOver&&dLeft!==null){var b=document.createElement('span');b.className='cdg-over';b.textContent=Math.abs(dLeft)+'d over';metaEl.appendChild(b);}
+      else if(fl==='ON TIME'&&dLeft!==null&&dLeft>=0&&dLeft<=7){var b=document.createElement('span');b.className=dLeft<=3?'cdg-urgent':'cdg-warn';b.textContent=dLeft+'d left';metaEl.appendChild(b);}
+      card.appendChild(metaEl);
+      var footEl=document.createElement('div');footEl.className='kb-card-foot';
+      var viewBtn=document.createElement('button');viewBtn.className='kb-view-btn';viewBtn.textContent='View';
+      viewBtn.onclick=(function(idx){return function(){openDetail(idx);};})(ri);footEl.appendChild(viewBtn);
+      if(isEd){
+        var sel=mkSel(statuses,r[10],async function(){if(sel.value&&sel.value!==r[10]){r[10]=sel.value;await saveData();renderKanban();renderStats();}});
+        sel.className='kb-status-sel';footEl.appendChild(sel);
+      }
+      card.appendChild(footEl);body.appendChild(card);
+    });
+    col.appendChild(body);board.appendChild(col);
+  });
+}
+
+// ── Keyboard Shortcuts ────────────────────────────────────────────
+document.addEventListener('keydown',function(e){
+  var tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select')return;
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  switch(e.key){
+    case 'n':case 'N':e.preventDefault();openModal();break;
+    case '/':e.preventDefault();var _s=document.getElementById('srch');if(_s){showView('tracker');setTimeout(function(){_s.focus();},50);}break;
+    case 'Escape':
+      if(document.getElementById('mbg').classList.contains('open'))closeModal();
+      else if(document.getElementById('detail-mbg').classList.contains('open')){document.getElementById('detail-mbg').classList.remove('open');if(typeof resetPdfExpand==='function')resetPdfExpand();}
+      else{var _sh=document.getElementById('shortcuts-help');if(_sh)_sh.remove();}
+      break;
+    case 'p':case 'P':e.preventDefault();window.print();break;
+    case '?':toggleShortcutsHelp();break;
+    case '1':showView('tracker');break;
+    case '2':showView('dashboard');break;
+    case '3':showView('kanban');break;
+    case '4':showView('dashboard');break;
+  }
+});
+function toggleShortcutsHelp(){
+  var ex=document.getElementById('shortcuts-help');if(ex){ex.remove();return;}
+  var el=document.createElement('div');el.id='shortcuts-help';el.className='shortcuts-help';
+  var pairs=[['N','New record'],['/','Focus search'],['1','Tracker'],['2','Dashboard'],['3','Kanban'],['P','Print'],['Esc','Close modal'],['?','This help']];
+  el.innerHTML='<div class="sh-title">Keyboard Shortcuts<button class="sh-close" onclick="document.getElementById(\'shortcuts-help\').remove()">&#10005;</button></div>'+
+    pairs.map(function(p){return'<div class="sh-row"><kbd>'+p[0]+'</kbd><span>'+p[1]+'</span></div>';}).join('');
+  document.body.appendChild(el);
+  setTimeout(function(){document.addEventListener('click',function fn(e){if(!el.contains(e.target)){el.remove();document.removeEventListener('click',fn);}});},80);
+}
+
+// ── Formal Report Export ──────────────────────────────────────────
+function exportReport(){
+  var data=getFiltered();
+  var now=new Date();
+  var dateStr=now.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+  var timeStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  var act=0,comp=0,hold=0,od=0,filed=0;
+  data.forEach(function(r){var s=(r[10]||'').toLowerCase();if(s==='active')act++;else if(s==='completed')comp++;else if(s==='on hold')hold++;else if(s==='filed')filed++;if(computeFlag(r)==='OVERDUE')od++;});
+  var tblRows=data.map(function(r,i){
+    var fl=computeFlag(r);
+    var stClr=r[10]==='Completed'?'#1a7a3c':r[10]==='Active'?'#0055aa':r[10]==='On Hold'?'#8a6000':r[10]==='Cancelled'?'#b81c2e':'#5a2d9a';
+    var flClr=fl==='OVERDUE'?'#b81c2e':'#1a7a3c';
+    return'<tr><td>'+(i+1)+'</td><td>'+_esc(r[1]||'')+'</td><td>'+_esc(r[2]||'')+'</td><td>'+_esc(r[3]||'')+'</td><td>'+_esc(r[4]||'')+'</td><td>'+_esc(fmtDate(r[6]))+'</td><td>'+_esc(fmtDate(r[9]))+'</td><td style="font-weight:700;color:'+stClr+'">'+_esc(r[10]||'')+'</td><td style="font-weight:700;color:'+flClr+'">'+_esc(fl)+'</td><td>'+_esc(r[12]||'')+'</td></tr>';
+  }).join('');
+  var isFiltered=data.length<rows.length;
+  var subtitle=isFiltered?'FILTERED RECORDS ('+data.length+' of '+rows.length+')':'ALL RECORDS ('+rows.length+')';
+  var html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>NASS Branch Report</title><style>'+
+    'body{font-family:Arial,sans-serif;font-size:10pt;color:#000;margin:0;padding:0}'+
+    '.page{padding:2cm 2.2cm}'+
+    '.hdr{text-align:center;border-bottom:3px solid #002655;padding-bottom:14px;margin-bottom:18px}'+
+    '.hdr-org{font-size:11pt;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#002655;margin-bottom:2px}'+
+    '.hdr-title{font-size:16pt;font-weight:800;color:#002655;margin:6px 0 3px}'+
+    '.hdr-sub{font-size:9pt;color:#555;text-transform:uppercase;letter-spacing:.06em}'+
+    '.meta-row{display:flex;justify-content:space-between;font-size:9pt;color:#444;margin:10px 0 18px;border-top:1px solid #ccc;border-bottom:1px solid #ccc;padding:6px 0}'+
+    '.stats-row{display:flex;gap:0;margin-bottom:20px;border:1px solid #ccc;border-radius:4px;overflow:hidden}'+
+    '.stat{flex:1;text-align:center;padding:10px 6px;border-right:1px solid #ccc}'+
+    '.stat:last-child{border-right:none}'+
+    '.stat-n{font-size:20pt;font-weight:800;color:#002655;line-height:1}'+
+    '.stat-l{font-size:7.5pt;text-transform:uppercase;letter-spacing:.06em;color:#666;margin-top:3px}'+
+    'table{width:100%;border-collapse:collapse;font-size:8.5pt}'+
+    'thead th{background:#002655;color:#fff;padding:5pt 5pt;text-align:left;font-size:8pt;font-weight:700;border:1pt solid #001a44}'+
+    'tbody td{padding:4pt 5pt;border:0.5pt solid #ccd;vertical-align:top}'+
+    'tbody tr:nth-child(even) td{background:#f4f6fa}'+
+    '.footer{margin-top:20px;text-align:center;font-size:8pt;color:#888;border-top:1px solid #ccc;padding-top:8px}'+
+    '.cls-unclass{display:inline-block;padding:2px 14px;border:2px solid #1a7a3c;color:#1a7a3c;font-weight:800;font-size:9pt;letter-spacing:.1em}'+
+    '@media print{.page{padding:1cm 1.5cm}@page{margin:.8cm;size:landscape}}'+
+  '</style></head><body><div class="page">'+
+    '<div class="hdr">'+
+      '<div class="hdr-org">Nigerian Navy &mdash; Naval Headquarters, Abuja</div>'+
+      '<div class="hdr-title">NASS BRANCH DOCUMENT WORKFLOW TRACKER</div>'+
+      '<div class="hdr-sub">'+subtitle+'</div>'+
+      '<div style="margin-top:8px"><span class="cls-unclass">UNCLASSIFIED</span></div>'+
+    '</div>'+
+    '<div class="meta-row"><span><strong>Date Generated:</strong> '+dateStr+' at '+timeStr+'</span><span><strong>Generated by:</strong> '+_esc((window.userSession&&window.userSession.user.email)||'NASS Tracker')+'</span></div>'+
+    '<div class="stats-row">'+
+      '<div class="stat"><div class="stat-n">'+data.length+'</div><div class="stat-l">Total Shown</div></div>'+
+      '<div class="stat"><div class="stat-n" style="color:#0055aa">'+act+'</div><div class="stat-l">Active</div></div>'+
+      '<div class="stat"><div class="stat-n" style="color:#1a7a3c">'+comp+'</div><div class="stat-l">Completed</div></div>'+
+      '<div class="stat"><div class="stat-n" style="color:#b81c2e">'+od+'</div><div class="stat-l">Overdue</div></div>'+
+      '<div class="stat"><div class="stat-n" style="color:#c8a400">'+hold+'</div><div class="stat-l">On Hold</div></div>'+
+      '<div class="stat"><div class="stat-n" style="color:#5a2d9a">'+filed+'</div><div class="stat-l">Filed</div></div>'+
+    '</div>'+
+    '<table><thead><tr><th style="width:28pt">#</th><th style="width:90pt">File Ref No.</th><th>Subject / Description</th><th style="width:70pt">Location</th><th style="width:55pt">Officer</th><th style="width:50pt">Date Rcvd</th><th style="width:50pt">Due Date</th><th style="width:55pt">Status</th><th style="width:45pt">Delay</th><th>Remarks</th></tr></thead>'+
+    '<tbody>'+tblRows+'</tbody></table>'+
+    '<div class="footer">NASS Branch Document Workflow Tracker &nbsp;&bull;&nbsp; Naval Headquarters, Abuja &nbsp;&bull;&nbsp; Generated '+dateStr+'</div>'+
+  '</div></body></html>';
+  var win=window.open('','_blank','width=1000,height=720');
+  if(!win){alert('Please allow pop-ups for this site to generate the report.');return;}
+  win.document.write(html);win.document.close();win.focus();
+  setTimeout(function(){win.print();},900);
 }
