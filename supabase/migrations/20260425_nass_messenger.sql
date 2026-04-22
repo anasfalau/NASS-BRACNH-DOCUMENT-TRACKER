@@ -91,10 +91,24 @@ create policy "conv_select" on public.nass_conversations
     public.fn_is_conv_member(id)
   );
 
+-- Trigger auto-sets created_by = auth.uid() so client never needs to send it.
+-- The insert policy is simply "any authenticated user may create a conversation."
+create or replace function public.fn_set_conv_created_by()
+returns trigger language plpgsql security definer as $$
+begin
+  new.created_by := auth.uid();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_set_conv_created_by on public.nass_conversations;
+create trigger trg_set_conv_created_by
+  before insert on public.nass_conversations
+  for each row execute function public.fn_set_conv_created_by();
+
 drop policy if exists "conv_insert" on public.nass_conversations;
 create policy "conv_insert" on public.nass_conversations
-  for insert to authenticated
-  with check (auth.uid() = created_by);
+  for insert to authenticated with check (true);
 
 drop policy if exists "conv_update" on public.nass_conversations;
 create policy "conv_update" on public.nass_conversations
