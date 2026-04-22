@@ -922,8 +922,12 @@ td:has(.stat-inl):hover .stat-inl{background:var(--bg-row-hover);text-decoration
 /* ================================================================
    MESSENGER PANEL
    ================================================================ */
-.ms-panel{position:fixed;bottom:96px;right:24px;width:clamp(480px,42vw,620px);height:clamp(400px,70vh,640px);background:var(--bg-card);border-radius:var(--radius-lg-card);box-shadow:0 24px 60px rgba(0,0,0,0.28),0 4px 16px rgba(0,0,0,0.12);z-index:902;display:none;flex-direction:row;overflow:hidden;border:1px solid var(--border-soft);resize:both;min-width:380px;min-height:320px}
+.ms-panel{position:fixed;bottom:96px;right:24px;width:clamp(520px,44vw,660px);height:clamp(420px,72vh,660px);background:var(--bg-card);border-radius:var(--radius-lg-card);box-shadow:0 24px 60px rgba(0,0,0,0.28),0 4px 16px rgba(0,0,0,0.12);z-index:902;display:none;flex-direction:row;overflow:hidden;border:1px solid var(--border-soft);resize:both;min-width:420px;min-height:340px}
 .ms-panel.ms-open{display:flex}
+
+/* ── Back button (mobile only, shown via @media) ── */
+.ms-back-btn{display:none;align-items:center;justify-content:center;background:none;border:none;color:var(--fg-subtle);cursor:pointer;padding:4px 6px;border-radius:6px;margin-right:4px;flex-shrink:0;transition:background 0.15s}
+.ms-back-btn:hover{background:var(--bg-row-hover)}
 
 /* ── Sidebar ── */
 .ms-sidebar{width:210px;min-width:180px;border-right:1px solid var(--border-soft);display:flex;flex-direction:column;background:var(--bg-subtle);flex-shrink:0}
@@ -1063,10 +1067,27 @@ body.dark .ms-picker-sect-lbl{color:#526a88!important}
 body.dark .ms-badge{box-shadow:0 0 0 2px #0e1a2e!important}
 body.dark .ms-thread-empty{color:#526a88!important}
 
+/* ── Tablet (701–1024 px) ─────────────────────────────────────────── */
+@media(max-width:1024px) and (min-width:701px){
+  .ms-panel{width:min(88vw,600px);height:clamp(400px,70vh,640px);right:16px;bottom:90px;min-width:360px;resize:both}
+  .ms-sidebar{width:185px;min-width:160px}
+}
+
+/* ── Mobile (≤ 700 px) ───────────────────────────────────────────── */
 @media(max-width:700px){
-  .ms-panel{width:calc(100vw - 12px)!important;height:calc(100vh - 90px)!important;bottom:80px;right:6px;left:6px;border-radius:var(--radius-card);resize:none}
-  .ms-sidebar{width:100%;min-width:0}
-  .ms-panel.ms-has-conv .ms-sidebar{display:none}
-  .ms-panel.ms-has-conv .ms-thread{display:flex}
+  /* Full-screen overlay */
+  .ms-panel{position:fixed!important;inset:0!important;width:100%!important;height:100%!important;bottom:0!important;right:0!important;left:0!important;top:0!important;border-radius:0!important;resize:none!important;z-index:1100!important;min-width:0!important;min-height:0!important}
+  /* Sidebar takes full width when showing conv list */
+  .ms-sidebar{width:100%!important;min-width:0!important}
+  /* Stack: hide sidebar when a conv is open, show thread */
+  .ms-panel.ms-has-conv .ms-sidebar{display:none!important}
+  .ms-panel.ms-has-conv .ms-thread{display:flex!important}
+  /* Show back arrow in thread header on mobile */
+  .ms-back-btn{display:flex!important}
+  /* Hide FAB behind full-screen panel */
+  .ms-panel.ms-open ~ #ncp-fab,
+  body.ms-chat-open #ncp-fab{display:none!important}
+  /* Tighten message bubbles */
+  .ms-msg{max-width:88%}
   #ncp-fab{bottom:16px;right:16px;width:50px;height:50px}
 }

@@ -231,6 +231,9 @@ async function _openConv(convId){
   _unread=Math.max(0,_convs.reduce(function(s,c){return s+(c.unread||0);},0));
   _badge();
   _renderConvList(document.getElementById('ms-sb-search')?document.getElementById('ms-sb-search').value:'');
+  // Mark panel for mobile layout (sidebar → thread swap) + body class to hide FAB
+  if(_panel)_panel.classList.add('ms-has-conv');
+  document.body.classList.add('ms-chat-open');
   // Build thread UI immediately
   _renderThreadShell(conv);
   // Load messages — guard against stale results if user switches conv mid-load
@@ -250,6 +253,17 @@ async function _openConv(convId){
   }
 }
 
+// ── Go back to conv list (mobile) ────────────────────────────────
+function _goBack(){
+  _activeId=null;
+  if(_panel)_panel.classList.remove('ms-has-conv');
+  document.body.classList.remove('ms-chat-open');
+  // Reset thread to empty state
+  var t=document.getElementById('ms-thread');
+  if(t)t.innerHTML='<div class="ms-thread-empty"><div style="font-size:48px;margin-bottom:12px">&#128172;</div><div style="font-size:14px;font-weight:600;color:var(--fg-muted);margin-bottom:6px">Select a conversation</div><div style="font-size:12px;color:var(--fg-subtle)">or start a new DM / Group above</div></div>';
+}
+window._msGoBack=_goBack;
+
 // ── Render thread shell ───────────────────────────────────────────
 function _renderThreadShell(conv){
   var t=document.getElementById('ms-thread');if(!t)return;
@@ -263,8 +277,14 @@ function _renderThreadShell(conv){
   }
   t.innerHTML=
     '<div class="ms-th-hdr">'+
+      // Back button (visible on mobile via CSS)
+      '<button class="ms-back-btn" onclick="window._msGoBack()" title="Back to conversations" aria-label="Back">'+
+        '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'+
+          '<polyline points="15 18 9 12 15 6"/>'+
+        '</svg>'+
+      '</button>'+
       '<div class="ms-th-av">'+_convAv(conv)+'</div>'+
-      '<div><div class="ms-th-nm">'+_esc(nm)+'</div>'+sub+'</div>'+
+      '<div style="flex:1;min-width:0"><div class="ms-th-nm">'+_esc(nm)+'</div>'+sub+'</div>'+
     '</div>'+
     '<div class="ms-msgs" id="ms-msgs"><div class="ms-msgs-info">Loading&#8230;</div></div>'+
     '<div class="ms-inp-row">'+
@@ -616,8 +636,9 @@ window._nassMsOpen=async function(){
   _subscribe();
 };
 window._nassMsClose=function(){
-  if(_panel)_panel.classList.remove('ms-open');
-  _open=false;
+  if(_panel){_panel.classList.remove('ms-open');_panel.classList.remove('ms-has-conv');}
+  _open=false;_activeId=null;
+  document.body.classList.remove('ms-chat-open');
   var fab=document.getElementById('ncp-fab');if(fab)fab.classList.remove('ms-btn-on');
 };
 // Note: _nassMsOpen() is called by index.html's script onload handler — no auto-call here.
