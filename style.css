@@ -293,10 +293,9 @@ th{position:relative}
    AI CHAT PANEL
    ================================================================ */
 
-/* Messenger FAB — draggable */
-#ncp-fab{position:fixed;bottom:24px;right:24px;z-index:903;width:54px;height:54px;border-radius:50%;border:none;cursor:grab;background:var(--grad-topbar);color:#fff;box-shadow:0 4px 18px rgba(0,38,85,0.45);display:flex;align-items:center;justify-content:center;transition:box-shadow 0.2s;padding:0;overflow:visible;touch-action:none}
+/* Messenger FAB — draggable (pointer cursor — click to open, drag to move) */
+#ncp-fab{position:fixed;bottom:24px;right:24px;z-index:903;width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;background:var(--grad-topbar);color:#fff;box-shadow:0 4px 18px rgba(0,38,85,0.45);display:flex;align-items:center;justify-content:center;transition:box-shadow 0.2s;padding:0;overflow:visible;touch-action:none}
 #ncp-fab:hover{box-shadow:0 6px 24px rgba(0,38,85,0.55);filter:brightness(1.08)}
-#ncp-fab:active{cursor:grabbing}
 #ncp-fab.ms-btn-on{background:linear-gradient(135deg,var(--nass-navy-400),var(--nass-navy-700));box-shadow:0 0 0 3px rgba(255,255,255,0.25),0 6px 24px rgba(0,38,85,0.55)}
 #ncp-fab .ms-badge{position:absolute;top:-4px;right:-4px}
 .ncp-fab-icon{font-size:26px;line-height:1}
@@ -934,8 +933,9 @@ td:has(.stat-inl):hover .stat-inl{background:var(--bg-row-hover);text-decoration
 
 /* ── Sidebar ── */
 .ms-sidebar{width:210px;min-width:180px;border-right:1px solid var(--border-soft);display:flex;flex-direction:column;background:var(--bg-subtle);flex-shrink:0}
-.ms-sb-hdr{padding:12px 14px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;background:var(--grad-topbar);flex-shrink:0;cursor:grab;user-select:none}
-.ms-sb-hdr:active{cursor:grabbing}
+.ms-sb-hdr{padding:12px 14px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;background:var(--grad-topbar);flex-shrink:0;cursor:move;user-select:none}
+.ms-th-hdr{cursor:move}
+.ms-sb-hdr button,.ms-th-hdr button{cursor:pointer}
 .ms-sb-title{color:#fff;font-size:14px;font-weight:700;letter-spacing:0.02em}
 .ms-sb-btns{display:flex;gap:5px}
 .ms-icon-btn{background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.22);color:#fff;border-radius:var(--radius-sm);padding:5px 6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;line-height:1}
