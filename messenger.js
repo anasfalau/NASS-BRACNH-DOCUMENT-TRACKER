@@ -426,9 +426,12 @@ function _badge(){
 async function _loadUsers(){
   if(_users.length)return;
   try{
-    var r=await _sb.from('nass_profiles').select('id,email,role').order('email');
+    // nass_profiles uses user_id (FK to auth.users), not id
+    var r=await _sb.from('nass_profiles').select('user_id,email,role').order('email');
     if(r.error)throw r.error;
-    _users=(r.data||[]).filter(function(u){return u.id!==_myId;});
+    _users=(r.data||[])
+      .map(function(u){return{id:u.user_id,email:u.email,role:u.role};})
+      .filter(function(u){return u.id&&u.id!==_myId;});
   }catch(e){
     console.warn('[MS] loadUsers',e);
     _users=[];
@@ -465,9 +468,16 @@ async function _openDmModal(){
 }
 function _closeDmModal(){document.getElementById('ms-dm-modal').style.display='none';}
 
+// ── Ensure identity is set before inserts ─────────────────────────
+async function _ensureId(){
+  if(_myId)return;
+  try{var gu=await _sb.auth.getUser();if(gu.data&&gu.data.user){_myId=gu.data.user.id;_myEmail=gu.data.user.email;}}catch(e){}
+}
+
 // ── Find or create DM ─────────────────────────────────────────────
 async function _startDM(u){
   _closeDmModal();
+  await _ensureId();
   // Check for existing direct conversation
   try{
     var myR=await _sb.from('nass_conv_members').select('conversation_id').eq('user_id',_myId);
@@ -557,6 +567,7 @@ async function _createGroup(){
   if(!name){alert('Please enter a group name.');return;}
   if(!_grpSelected.length){alert('Please add at least one member.');return;}
   _closeGrpModal();
+  await _ensureId();
   try{
     var cr=await _sb.from('nass_conversations').insert({type:'group',name:name,created_by:_myId}).select().single();
     if(cr.error)throw cr.error;
@@ -570,9 +581,21 @@ async function _createGroup(){
 }
 
 // ── Public open / close ───────────────────────────────────────────
-window._nassMsOpen=function(){
-  _myEmail=(window.userSession&&window.userSession.user&&window.userSession.user.email)||'';
-  _myId=(window.userSession&&window.userSession.user&&window.userSession.user.id)||'';
+window._nassMsOpen=async function(){
+  // Always fetch identity fresh from Supabase auth — avoids timing issues
+  // with window.userSession not yet set when the script first runs.
+  try{
+    var gu=await _sb.auth.getUser();
+    if(gu.data&&gu.data.user){
+      _myId=gu.data.user.id||'';
+      _myEmail=gu.data.user.email||'';
+    }
+  }catch(e){}
+  // Fallback to window.userSession if getUser fails
+  if(!_myId){
+    _myEmail=(window.userSession&&window.userSession.user&&window.userSession.user.email)||'';
+    _myId=(window.userSession&&window.userSession.user&&window.userSession.user.id)||'';
+  }
   if(!_panel)_build();
   _panel.classList.add('ms-open');
   _open=true;
