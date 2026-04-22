@@ -679,6 +679,26 @@ th{position:relative}
 .dh-new{color:var(--signal-success);font-weight:700;font-size:11px}
 .dh-empty{font-size:12px;color:var(--fg-faint);padding:10px 0;text-align:center}
 
+/* ================================================================
+   INLINE STATUS EDIT
+   ================================================================ */
+.stat-inl{display:inline-block;padding:2px 8px;border-radius:var(--radius-pill);font-size:11.5px;font-weight:700;background:var(--bg-muted);color:var(--fg-body);cursor:pointer;transition:background var(--ease-std)}
+td:has(.stat-inl):hover .stat-inl{background:var(--bg-row-hover);text-decoration:underline dotted}
+.inline-stat-sel{width:100%;min-width:90px;padding:4px 5px;border:2px solid var(--nass-gold-500);border-radius:var(--radius-sm);font-size:12px;font-family:var(--font-sans);background:var(--bg-focus-cell);color:var(--fg-ink);cursor:pointer;outline:none}
+
+/* ================================================================
+   ACTIVITY LOG
+   ================================================================ */
+.al-td{padding:7px 10px;font-size:12px;vertical-align:middle}
+.al-td-ts{padding:7px 10px;font-size:12px;white-space:nowrap;color:var(--fg-muted);font-variant-numeric:tabular-nums}
+.al-td-rec{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.al-lbl{display:inline-block;padding:2px 8px;border-radius:var(--radius-pill);font-size:10.5px;font-weight:700;letter-spacing:0.04em;background:var(--bg-muted);color:var(--fg-subtle)}
+.al-lbl-created{background:var(--status-completed-bg);color:var(--status-completed-fg)}
+.al-lbl-status{background:var(--status-active-bg);color:var(--status-active-fg)}
+.al-lbl-location{background:var(--status-hold-bg);color:var(--status-hold-fg)}
+.al-lbl-officer{background:var(--status-filed-bg);color:var(--status-filed-fg)}
+.al-lbl-action,.al-lbl-remarks,.al-lbl-updated{background:var(--bg-muted);color:var(--fg-muted)}
+
 @media print{
   /* Hide interactive chrome */
   .topbar,.sbar,.bbar,#ncp-fab,#ncp-panel,#nass-login,#nass-pwchange,

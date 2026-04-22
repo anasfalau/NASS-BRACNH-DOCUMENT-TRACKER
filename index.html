@@ -142,6 +142,7 @@ if ('serviceWorker' in navigator) {
     <button class="tab"    id="tb-dashboard" onclick="showView('dashboard')">&#128200; Dashboard</button>
     <button class="tab"    id="tb-admin"     onclick="showView('admin')">Admin Panel</button>
     <button class="tab"    id="tb-users"     onclick="showView('users')" style="display:none">Users</button>
+    <button class="tab"    id="tb-audit"     onclick="showView('audit')" style="display:none">&#128203; Activity Log</button>
   </div>
   <button class="btn btn-ghost" onclick="exportCSV()">&#8595; Export CSV</button>
   <button class="btn btn-gold"  onclick="openModal()">+ Add Record</button>
@@ -170,6 +171,8 @@ if ('serviceWorker' in navigator) {
     <label>Officer:</label><select id="f-officer" onchange="applyFilter()"><option value="">All</option></select>
     <label>Delay:</label>
     <select id="f-delay" onchange="applyFilter()"><option value="">All</option><option value="OVERDUE">Overdue</option><option value="ON TIME">On time</option></select>
+    <label>From:</label><input type="date" id="f-from" onchange="applyFilter()" style="padding:5px 7px;border:1px solid var(--border-default);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--fg-ink)">
+    <label>To:</label><input type="date" id="f-to" onchange="applyFilter()" style="padding:5px 7px;border:1px solid var(--border-default);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--fg-ink)">
     <button class="btn btn-clear" onclick="clearFilter()">Clear</button>
     <span id="fc" style="font-size:12px;color:#888"></span>
     <div class="cvp-wrap">
@@ -291,6 +294,49 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 </div>
+<!-- ── Activity Log Panel (editor + superuser) ───────────────── -->
+<div id="view-audit" style="display:none;background:var(--bg-app);min-height:calc(100vh - 56px);padding:28px 20px">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="acard">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h3 style="font-size:15px;font-weight:700;color:var(--nass-navy-700);margin:0 0 4px">Activity Log</h3>
+          <p style="font-size:12px;color:var(--fg-subtle);margin:0">Every change made to records — who did what and when.</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="al-filter-user" placeholder="&#128269; Filter by user…" oninput="loadAuditLog(1)"
+            style="padding:7px 10px;border:1px solid var(--border-default);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--bg-card);width:200px">
+          <select id="al-filter-action" onchange="loadAuditLog(1)"
+            style="padding:7px 10px;border:1px solid var(--border-default);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--bg-card)">
+            <option value="">All change types</option>
+            <option value="created">New Record</option>
+            <option value="status">Status</option>
+            <option value="location">Location</option>
+            <option value="officer">Officer</option>
+            <option value="action">Last Action</option>
+            <option value="remarks">Remarks</option>
+          </select>
+        </div>
+      </div>
+      <div class="tw" style="max-height:calc(100vh - 300px)">
+        <table>
+          <thead><tr>
+            <th class="ns" style="width:150px">Timestamp</th>
+            <th class="ns" style="width:180px">User</th>
+            <th class="ns" style="width:110px">Change Type</th>
+            <th class="ns">Record</th>
+            <th class="ns">Before &#8594; After</th>
+          </tr></thead>
+          <tbody id="al-tbody">
+            <tr><td colspan="5" style="text-align:center;padding:28px;color:#888">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="al-pager" class="db-pager" style="margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
 <div class="mbg" id="mbg">
   <div class="mbox">
     <h3 id="mtitle">Add New Record</h3>
