@@ -293,10 +293,11 @@ th{position:relative}
    AI CHAT PANEL
    ================================================================ */
 
-/* Floating action button */
-#ncp-fab{position:fixed;bottom:28px;right:28px;z-index:900;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:var(--grad-topbar);color:var(--fg-on-navy);box-shadow:0 4px 18px rgba(0,38,85,0.45);display:flex;align-items:center;justify-content:center;transition:transform 0.2s,box-shadow 0.2s;padding:0}
+/* Floating action button — Messenger launcher */
+#ncp-fab{position:fixed;bottom:24px;right:24px;z-index:903;width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;background:var(--grad-topbar);color:#fff;box-shadow:0 4px 18px rgba(0,38,85,0.45);display:flex;align-items:center;justify-content:center;transition:transform 0.2s,box-shadow 0.2s;padding:0;overflow:visible}
 #ncp-fab:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(0,38,85,0.55)}
-#ncp-fab.ncp-fab-active{background:linear-gradient(135deg,var(--nass-navy-400),var(--nass-navy-700))}
+#ncp-fab.ms-btn-on{background:linear-gradient(135deg,var(--nass-navy-400),var(--nass-navy-700));box-shadow:0 0 0 3px rgba(255,255,255,0.25),0 6px 24px rgba(0,38,85,0.55)}
+#ncp-fab .ms-badge{position:absolute;top:-4px;right:-4px}
 .ncp-fab-icon{font-size:26px;line-height:1}
 
 /* Panel */
@@ -921,11 +922,11 @@ td:has(.stat-inl):hover .stat-inl{background:var(--bg-row-hover);text-decoration
 /* ================================================================
    MESSENGER PANEL
    ================================================================ */
-.ms-panel{position:fixed;bottom:72px;right:24px;width:820px;height:82vh;max-height:680px;min-height:420px;background:var(--bg-card);border-radius:var(--radius-lg-card);box-shadow:0 24px 60px rgba(0,0,0,0.28),0 4px 16px rgba(0,0,0,0.12);z-index:900;display:none;flex-direction:row;overflow:hidden;border:1px solid var(--border-soft)}
+.ms-panel{position:fixed;bottom:96px;right:24px;width:clamp(480px,42vw,620px);height:clamp(400px,70vh,640px);background:var(--bg-card);border-radius:var(--radius-lg-card);box-shadow:0 24px 60px rgba(0,0,0,0.28),0 4px 16px rgba(0,0,0,0.12);z-index:902;display:none;flex-direction:row;overflow:hidden;border:1px solid var(--border-soft);resize:both;min-width:380px;min-height:320px}
 .ms-panel.ms-open{display:flex}
 
 /* ── Sidebar ── */
-.ms-sidebar{width:272px;min-width:272px;border-right:1px solid var(--border-soft);display:flex;flex-direction:column;background:var(--bg-subtle);flex-shrink:0}
+.ms-sidebar{width:210px;min-width:180px;border-right:1px solid var(--border-soft);display:flex;flex-direction:column;background:var(--bg-subtle);flex-shrink:0}
 .ms-sb-hdr{padding:12px 14px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;background:var(--grad-topbar);flex-shrink:0}
 .ms-sb-title{color:#fff;font-size:14px;font-weight:700;letter-spacing:0.02em}
 .ms-sb-btns{display:flex;gap:5px}
@@ -1063,8 +1064,9 @@ body.dark .ms-badge{box-shadow:0 0 0 2px #0e1a2e!important}
 body.dark .ms-thread-empty{color:#526a88!important}
 
 @media(max-width:700px){
-  .ms-panel{width:calc(100vw - 12px);height:calc(100vh - 82px);bottom:66px;right:6px;left:6px;border-radius:var(--radius-card)}
+  .ms-panel{width:calc(100vw - 12px)!important;height:calc(100vh - 90px)!important;bottom:80px;right:6px;left:6px;border-radius:var(--radius-card);resize:none}
   .ms-sidebar{width:100%;min-width:0}
   .ms-panel.ms-has-conv .ms-sidebar{display:none}
   .ms-panel.ms-has-conv .ms-thread{display:flex}
+  #ncp-fab{bottom:16px;right:16px;width:50px;height:50px}
 }

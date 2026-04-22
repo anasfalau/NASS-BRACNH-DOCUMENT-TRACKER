@@ -410,16 +410,20 @@ function _subscribe(){
     .subscribe();
 }
 
-// ── Badge on topbar button ────────────────────────────────────────
+// ── Badge on FAB ──────────────────────────────────────────────────
 function _badge(){
-  var b=document.getElementById('ms-badge');
-  if(!b){
-    var btn=document.getElementById('ms-btn');if(!btn)return;
-    b=document.createElement('span');b.id='ms-badge';b.className='ms-badge';
-    btn.style.position='relative';btn.appendChild(b);
+  // Primary: badge inside the FAB (ms-fab-badge injected in HTML)
+  var b=document.getElementById('ms-fab-badge');
+  // Fallback: topbar ms-btn badge
+  var b2=document.getElementById('ms-badge');
+  if(_unread>0){
+    var txt=_unread>9?'9+':String(_unread);
+    if(b){b.textContent=txt;b.style.display='flex';}
+    if(b2){b2.textContent=txt;b2.style.display='flex';}
+  }else{
+    if(b)b.style.display='none';
+    if(b2)b2.style.display='none';
   }
-  if(_unread>0){b.textContent=_unread>9?'9+':String(_unread);b.style.display='flex';}
-  else{b.style.display='none';}
 }
 
 // ── Load user list for pickers ────────────────────────────────────
@@ -599,6 +603,7 @@ window._nassMsOpen=async function(){
   if(!_panel)_build();
   _panel.classList.add('ms-open');
   _open=true;
+  var fab=document.getElementById('ncp-fab');if(fab)fab.classList.add('ms-btn-on');
   var btn=document.getElementById('ms-btn');if(btn)btn.classList.add('ms-btn-on');
   _loadConvs();
   _subscribe();
@@ -606,6 +611,7 @@ window._nassMsOpen=async function(){
 window._nassMsClose=function(){
   if(_panel)_panel.classList.remove('ms-open');
   _open=false;
+  var fab=document.getElementById('ncp-fab');if(fab)fab.classList.remove('ms-btn-on');
   var btn=document.getElementById('ms-btn');if(btn)btn.classList.remove('ms-btn-on');
 };
 window._nassMsOpen();
