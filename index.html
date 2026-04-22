@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="NN-logo-transparent.png">
 <title>NASS Branch &mdash; Workflow Tracker</title>
-<link rel="stylesheet" href="style.css?v=20260430">
+<link rel="stylesheet" href="style.css?v=20260431">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -582,8 +582,8 @@ if ('serviceWorker' in navigator) {
   <button class="btn btn-gold" onclick="bulkUpdateStatus()">Apply</button>
   <button class="btn bulk-cancel" onclick="clearSel()">Cancel</button>
 </div>
-<!-- Messenger FAB — replaces AI chat icon -->
-<button id="ncp-fab" title="Open Messenger" onclick="window._nassMsLaunch()" style="display:none">
+<!-- Messenger FAB — draggable, click to open -->
+<button id="ncp-fab" title="Open Messenger (drag to reposition)" style="display:none">
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
   </svg>
@@ -592,9 +592,64 @@ if ('serviceWorker' in navigator) {
 <script>
 (function(){
   var _chatLoaded=false,_chatLoading=false;
+  // ── FAB drag-to-reposition ────────────────────────────────────────
+  function _initFabDrag(fab){
+    var THRESH=6,dragging=false,moved=false,sx=0,sy=0,fl=0,ft=0;
+    function _anchor(){
+      var r=fab.getBoundingClientRect();
+      fab.style.right='auto';fab.style.bottom='auto';
+      fab.style.left=r.left+'px';fab.style.top=r.top+'px';
+      return r;
+    }
+    function _clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
+    function _save(){localStorage.setItem('ms-fab-l',fab.style.left);localStorage.setItem('ms-fab-t',fab.style.top);}
+    // Restore saved position
+    var sl=localStorage.getItem('ms-fab-l'),st=localStorage.getItem('ms-fab-t');
+    if(sl&&st){fab.style.right='auto';fab.style.bottom='auto';fab.style.left=sl;fab.style.top=st;}
+    // Mouse
+    fab.addEventListener('mousedown',function(e){
+      if(e.button!==0)return;
+      var r=_anchor();fl=r.left;ft=r.top;sx=e.clientX;sy=e.clientY;
+      dragging=true;moved=false;e.preventDefault();
+      document.addEventListener('mousemove',_mm);document.addEventListener('mouseup',_mu);
+    });
+    function _mm(e){
+      if(!dragging)return;
+      var dx=e.clientX-sx,dy=e.clientY-sy,sz=fab.offsetWidth;
+      if(!moved&&Math.sqrt(dx*dx+dy*dy)<THRESH)return;
+      moved=true;fab.style.cursor='grabbing';
+      fab.style.left=_clamp(fl+dx,0,window.innerWidth-sz)+'px';
+      fab.style.top=_clamp(ft+dy,0,window.innerHeight-sz)+'px';
+    }
+    function _mu(){
+      document.removeEventListener('mousemove',_mm);document.removeEventListener('mouseup',_mu);
+      fab.style.cursor='';
+      if(moved){_save();}else{window._nassMsLaunch();}
+      dragging=false;
+    }
+    // Touch
+    fab.addEventListener('touchstart',function(e){
+      var t=e.touches[0],r=_anchor();fl=r.left;ft=r.top;sx=t.clientX;sy=t.clientY;
+      dragging=true;moved=false;
+    },{passive:true});
+    fab.addEventListener('touchmove',function(e){
+      if(!dragging)return;e.preventDefault();
+      var t=e.touches[0],dx=t.clientX-sx,dy=t.clientY-sy,sz=fab.offsetWidth;
+      if(Math.sqrt(dx*dx+dy*dy)>=THRESH)moved=true;
+      if(!moved)return;
+      fab.style.left=_clamp(fl+dx,0,window.innerWidth-sz)+'px';
+      fab.style.top=_clamp(ft+dy,0,window.innerHeight-sz)+'px';
+    },{passive:false});
+    fab.addEventListener('touchend',function(){
+      if(moved){_save();}else{window._nassMsLaunch();}
+      dragging=false;
+    });
+  }
+
   // Shown only after auth (supabase-init.js calls nassShowFab())
   window.nassShowFab=function(){
-    var f=document.getElementById('ncp-fab');if(f)f.style.display='';
+    var f=document.getElementById('ncp-fab');
+    if(f){f.style.display='';_initFabDrag(f);}
   };
   // ── Messenger lazy-loader ─────────────────────────────────────
   var _msLoaded=false,_msLoading=false;
@@ -607,7 +662,7 @@ if ('serviceWorker' in navigator) {
     }
     if(_msLoading)return;
     _msLoading=true;
-    var s=document.createElement('script');s.src='messenger.js?v=20260430';
+    var s=document.createElement('script');s.src='messenger.js?v=20260431';
     s.onload=function(){_msLoaded=true;_msLoading=false;if(typeof window._nassMsOpen==='function')window._nassMsOpen();};
     s.onerror=function(){_msLoading=false;alert('Could not load messenger. Check your connection.');};
     document.head.appendChild(s);
