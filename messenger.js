@@ -495,11 +495,11 @@ async function _startDM(u){
       }
     }
   }catch(e){console.warn('[MS] find DM',e);}
-  // Create new DM
+  // Create new DM — generate UUID client-side to avoid RETURNING RLS race
   try{
-    var cr=await _sb.from('nass_conversations').insert({type:'direct',created_by:_myId||null}).select().single();
-    if(cr.error)throw cr.error;
-    var cid=cr.data.id;
+    var cid=crypto.randomUUID();
+    var{error:ce}=await _sb.from('nass_conversations').insert({id:cid,type:'direct'});
+    if(ce)throw ce;
     await _sb.from('nass_conv_members').insert([
       {conversation_id:cid,user_id:_myId,user_email:_myEmail},
       {conversation_id:cid,user_id:u.id,user_email:u.email}
@@ -569,9 +569,9 @@ async function _createGroup(){
   _closeGrpModal();
   await _ensureId();
   try{
-    var cr=await _sb.from('nass_conversations').insert({type:'group',name:name,created_by:_myId||null}).select().single();
-    if(cr.error)throw cr.error;
-    var cid=cr.data.id;
+    var cid=crypto.randomUUID();
+    var{error:ce}=await _sb.from('nass_conversations').insert({id:cid,type:'group',name:name});
+    if(ce)throw ce;
     var members=[{conversation_id:cid,user_id:_myId,user_email:_myEmail}];
     _grpSelected.forEach(function(u){members.push({conversation_id:cid,user_id:u.id,user_email:u.email});});
     await _sb.from('nass_conv_members').insert(members);

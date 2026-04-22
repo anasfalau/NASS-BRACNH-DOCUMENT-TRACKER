@@ -605,7 +605,7 @@ if ('serviceWorker' in navigator) {
     }
     if(_msLoading)return;
     _msLoading=true;
-    var s=document.createElement('script');s.src='messenger.js?v=20260426c';
+    var s=document.createElement('script');s.src='messenger.js?v=20260426d';
     s.onload=function(){_msLoaded=true;_msLoading=false;if(typeof window._nassMsOpen==='function')window._nassMsOpen();};
     s.onerror=function(){_msLoading=false;alert('Could not load messenger. Check your connection.');};
     document.head.appendChild(s);
