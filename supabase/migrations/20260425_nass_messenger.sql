@@ -69,17 +69,26 @@ create trigger trg_update_conv_last_msg
   after insert on public.nass_messages
   for each row execute function public.fn_update_conv_last_msg();
 
+-- ── Security-definer helper (avoids RLS recursion) ───────────────
+-- This function runs with owner privileges (bypasses RLS on
+-- nass_conv_members), breaking the infinite-recursion loop that
+-- would occur if the members_select policy queried itself.
+create or replace function public.fn_is_conv_member(conv_id uuid)
+returns boolean language sql security definer stable as $$
+  select exists (
+    select 1 from public.nass_conv_members
+    where conversation_id = conv_id
+      and user_id = auth.uid()
+  );
+$$;
+
 -- ── RLS: Conversations ───────────────────────────────────────────
 alter table public.nass_conversations enable row level security;
 
 drop policy if exists "conv_select" on public.nass_conversations;
 create policy "conv_select" on public.nass_conversations
   for select to authenticated using (
-    exists (
-      select 1 from public.nass_conv_members
-      where conversation_id = nass_conversations.id
-        and user_id = auth.uid()
-    )
+    public.fn_is_conv_member(id)
   );
 
 drop policy if exists "conv_insert" on public.nass_conversations;
@@ -90,31 +99,22 @@ create policy "conv_insert" on public.nass_conversations
 drop policy if exists "conv_update" on public.nass_conversations;
 create policy "conv_update" on public.nass_conversations
   for update to authenticated
-  using (
-    exists (
-      select 1 from public.nass_conv_members
-      where conversation_id = nass_conversations.id
-        and user_id = auth.uid()
-    )
-  );
+  using (public.fn_is_conv_member(id));
 
 -- ── RLS: Members ─────────────────────────────────────────────────
 alter table public.nass_conv_members enable row level security;
 
+-- Uses fn_is_conv_member (security definer) — no recursion
 drop policy if exists "members_select" on public.nass_conv_members;
 create policy "members_select" on public.nass_conv_members
   for select to authenticated using (
-    exists (
-      select 1 from public.nass_conv_members m2
-      where m2.conversation_id = nass_conv_members.conversation_id
-        and m2.user_id = auth.uid()
-    )
+    public.fn_is_conv_member(conversation_id)
   );
 
 drop policy if exists "members_insert" on public.nass_conv_members;
 create policy "members_insert" on public.nass_conv_members
   for insert to authenticated with check (
-    -- Creator can add members; users can add themselves
+    -- Creator can add any member; a user can always insert themselves
     exists (
       select 1 from public.nass_conversations
       where id = conversation_id and created_by = auth.uid()
@@ -133,22 +133,14 @@ alter table public.nass_messages enable row level security;
 drop policy if exists "messages_select" on public.nass_messages;
 create policy "messages_select" on public.nass_messages
   for select to authenticated using (
-    exists (
-      select 1 from public.nass_conv_members
-      where conversation_id = nass_messages.conversation_id
-        and user_id = auth.uid()
-    )
+    public.fn_is_conv_member(conversation_id)
   );
 
 drop policy if exists "messages_insert" on public.nass_messages;
 create policy "messages_insert" on public.nass_messages
   for insert to authenticated with check (
     auth.uid() = user_id and
-    exists (
-      select 1 from public.nass_conv_members
-      where conversation_id = nass_messages.conversation_id
-        and user_id = auth.uid()
-    )
+    public.fn_is_conv_member(conversation_id)
   );
 
 -- ── Realtime ─────────────────────────────────────────────────────
