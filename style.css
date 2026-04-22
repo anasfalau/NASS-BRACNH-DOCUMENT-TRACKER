@@ -931,7 +931,8 @@ td:has(.stat-inl):hover .stat-inl{background:var(--bg-row-hover);text-decoration
 
 /* ── Sidebar ── */
 .ms-sidebar{width:210px;min-width:180px;border-right:1px solid var(--border-soft);display:flex;flex-direction:column;background:var(--bg-subtle);flex-shrink:0}
-.ms-sb-hdr{padding:12px 14px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;background:var(--grad-topbar);flex-shrink:0}
+.ms-sb-hdr{padding:12px 14px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;background:var(--grad-topbar);flex-shrink:0;cursor:grab;user-select:none}
+.ms-sb-hdr:active{cursor:grabbing}
 .ms-sb-title{color:#fff;font-size:14px;font-weight:700;letter-spacing:0.02em}
 .ms-sb-btns{display:flex;gap:5px}
 .ms-icon-btn{background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.22);color:#fff;border-radius:var(--radius-sm);padding:5px 6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;line-height:1}

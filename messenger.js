@@ -64,6 +64,92 @@ function _lastPreview(m){
   return who+': '+(m.content||'').substring(0,55)+(m.content&&m.content.length>55?'…':'');
 }
 
+// ── Drag to move ─────────────────────────────────────────────────
+function _initDrag(panel){
+  // Attach drag to the sidebar header (always visible, natural grip area)
+  var handle=panel.querySelector('.ms-sb-hdr');
+  if(!handle)return;
+
+  var dragging=false,ox=0,oy=0,pl=0,pt=0;
+
+  function _anchorToTopLeft(){
+    // Convert CSS bottom/right to top/left so position arithmetic works
+    var r=panel.getBoundingClientRect();
+    panel.style.bottom='auto';
+    panel.style.right='auto';
+    panel.style.left=r.left+'px';
+    panel.style.top=r.top+'px';
+  }
+
+  function _clamp(val,min,max){return Math.max(min,Math.min(max,val));}
+
+  function _startDrag(cx,cy){
+    // Ignore on mobile (full-screen panel — no dragging needed)
+    if(window.innerWidth<=700)return;
+    if(!panel.style.left||panel.style.left==='')_anchorToTopLeft();
+    var r=panel.getBoundingClientRect();
+    pl=r.left;pt=r.top;ox=cx;oy=cy;
+    dragging=true;
+    panel.style.transition='none';
+    handle.style.cursor='grabbing';
+    document.body.style.userSelect='none';
+  }
+
+  function _moveDrag(cx,cy){
+    if(!dragging)return;
+    var nl=pl+(cx-ox);
+    var nt=pt+(cy-oy);
+    var pw=panel.offsetWidth,ph=panel.offsetHeight;
+    // Keep at least 60px of panel visible on each edge
+    nl=_clamp(nl,-(pw-60),window.innerWidth-60);
+    nt=_clamp(nt,0,window.innerHeight-60);
+    panel.style.left=nl+'px';
+    panel.style.top=nt+'px';
+  }
+
+  function _endDrag(){
+    if(!dragging)return;
+    dragging=false;
+    handle.style.cursor='grab';
+    document.body.style.userSelect='';
+  }
+
+  // Mouse events
+  handle.addEventListener('mousedown',function(e){
+    if(e.button!==0||e.target.closest('button,input'))return;
+    e.preventDefault();
+    _startDrag(e.clientX,e.clientY);
+    document.addEventListener('mousemove',_onMove);
+    document.addEventListener('mouseup',_onUp);
+  });
+  function _onMove(e){_moveDrag(e.clientX,e.clientY);}
+  function _onUp(){_endDrag();document.removeEventListener('mousemove',_onMove);document.removeEventListener('mouseup',_onUp);}
+
+  // Touch events (tablets)
+  handle.addEventListener('touchstart',function(e){
+    if(e.target.closest('button,input'))return;
+    var t=e.touches[0];
+    _startDrag(t.clientX,t.clientY);
+  },{passive:true});
+  handle.addEventListener('touchmove',function(e){
+    if(!dragging)return;
+    e.preventDefault();
+    var t=e.touches[0];
+    _moveDrag(t.clientX,t.clientY);
+  },{passive:false});
+  handle.addEventListener('touchend',_endDrag);
+
+  handle.style.cursor='grab';
+}
+
+// ── Reset panel to default position ──────────────────────────────
+function _resetPanelPos(){
+  if(!_panel)return;
+  _panel.style.left='';_panel.style.top='';
+  _panel.style.bottom='';_panel.style.right='';
+  _panel.style.width='';_panel.style.height='';
+}
+
 // ── Build panel DOM ───────────────────────────────────────────────
 function _build(){
   _panel=document.createElement('div');
@@ -132,6 +218,7 @@ function _build(){
     '</div>';
 
   document.body.appendChild(_panel);
+  _initDrag(_panel);
 
   // Wire events
   document.getElementById('ms-new-dm-btn').onclick=_openDmModal;
@@ -640,6 +727,8 @@ window._nassMsClose=function(){
   _open=false;_activeId=null;
   document.body.classList.remove('ms-chat-open');
   var fab=document.getElementById('ncp-fab');if(fab)fab.classList.remove('ms-btn-on');
+  // Reset position so next open starts at default bottom-right
+  _resetPanelPos();
 };
 // Note: _nassMsOpen() is called by index.html's script onload handler — no auto-call here.
 })();
