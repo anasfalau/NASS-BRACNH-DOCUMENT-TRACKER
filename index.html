@@ -16,6 +16,7 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+<script>if(localStorage.getItem('nassDark')==='1')document.body.classList.add('dark');</script>
 <!-- Offline banner -->
 <div id="offline-banner" style="display:none">
   <span>&#128268; You&#39;re offline &mdash; showing cached data. Changes will sync when reconnected.</span>
@@ -145,6 +146,7 @@ if ('serviceWorker' in navigator) {
     <button class="tab"    id="tb-kanban"    onclick="showView('kanban')">&#9783; Kanban</button>
     <button class="tab"    id="tb-audit"     onclick="showView('audit')" style="display:none">&#128203; Activity Log</button>
   </div>
+  <button class="btn btn-ghost dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Toggle dark mode">&#9790;</button>
   <button class="btn btn-ghost" onclick="exportCSV()">&#8595; Export CSV</button>
   <button class="btn btn-ghost" id="btn-report" onclick="exportReport()" title="Generate formal report (current filters)">&#128196; Report</button>
   <button class="btn btn-gold"  onclick="openModal()">+ Add Record</button>
