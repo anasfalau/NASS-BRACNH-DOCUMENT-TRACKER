@@ -293,7 +293,7 @@ th{position:relative}
    AI CHAT PANEL
    ================================================================ */
 
-/* Floating action button — Messenger launcher */
+/* Messenger FAB */
 #ncp-fab{position:fixed;bottom:24px;right:24px;z-index:903;width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;background:var(--grad-topbar);color:#fff;box-shadow:0 4px 18px rgba(0,38,85,0.45);display:flex;align-items:center;justify-content:center;transition:transform 0.2s,box-shadow 0.2s;padding:0;overflow:visible}
 #ncp-fab:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(0,38,85,0.55)}
 #ncp-fab.ms-btn-on{background:linear-gradient(135deg,var(--nass-navy-400),var(--nass-navy-700));box-shadow:0 0 0 3px rgba(255,255,255,0.25),0 6px 24px rgba(0,38,85,0.55)}

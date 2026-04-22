@@ -6,8 +6,8 @@
 //    • Offline fallback → serve cached index.html + post message
 // ================================================================
 
-const CACHE   = 'nass-tracker-v9';
-const OFFLINE = 'nass-offline-v9';
+const CACHE   = 'nass-tracker-v10';
+const OFFLINE = 'nass-offline-v10';
 
 const APP_SHELL = [
   './',
