@@ -21,6 +21,8 @@ var _unread=0;        // total unread count (for topbar badge)
 var _open=false;
 var _panel=null;
 var _grpSelected=[];  // users selected for new group
+var _loadingConvs=false;   // guard: prevent concurrent _loadConvs calls
+var _convListRafId=null;   // rAF id for batched conv-list renders
 
 // ── Helpers ───────────────────────────────────────────────────────
 function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -176,28 +178,30 @@ function _renderConvList(filter){
 
 // ── Load all conversations ────────────────────────────────────────
 async function _loadConvs(){
+  if(_loadingConvs)return;          // prevent concurrent loads
+  _loadingConvs=true;
   try{
     var r=await _sb.from('nass_conversations').select('*').order('last_msg_at',{ascending:false}).limit(60);
     if(r.error)throw r.error;
     var list=r.data||[];
     if(!list.length){_convs=[];_renderConvList('');return;}
     var ids=list.map(function(c){return c.id;});
-    // Fetch members
-    var mr=await _sb.from('nass_conv_members').select('*').in('conversation_id',ids);
-    var allMembers=mr.data||[];
-    // Fetch last message per conversation
-    var lgr=await _sb.from('nass_messages').select('conversation_id,content,created_at,user_email,is_ai_response').in('conversation_id',ids).order('created_at',{ascending:false}).limit(ids.length*3);
+    // Fetch members + last messages + my read timestamps in parallel
+    var results=await Promise.all([
+      _sb.from('nass_conv_members').select('*').in('conversation_id',ids),
+      _sb.from('nass_messages').select('conversation_id,content,created_at,user_id,user_email,is_ai_response')
+         .in('conversation_id',ids).order('created_at',{ascending:false}).limit(ids.length+20),
+      _sb.from('nass_conv_members').select('conversation_id,last_read_at').eq('user_id',_myId).in('conversation_id',ids)
+    ]);
+    var allMembers=results[0].data||[];
     var lastMsgs={};
-    (lgr.data||[]).forEach(function(m){if(!lastMsgs[m.conversation_id])lastMsgs[m.conversation_id]=m;});
-    // Fetch my read timestamps
-    var rdr=await _sb.from('nass_conv_members').select('conversation_id,last_read_at').eq('user_id',_myId).in('conversation_id',ids);
+    (results[1].data||[]).forEach(function(m){if(!lastMsgs[m.conversation_id])lastMsgs[m.conversation_id]=m;});
     var myReads={};
-    (rdr.data||[]).forEach(function(r){myReads[r.conversation_id]=r.last_read_at;});
+    (results[2].data||[]).forEach(function(row){myReads[row.conversation_id]=row.last_read_at;});
     // Build conv objects
     _convs=list.map(function(c){
       var members=allMembers.filter(function(m){return m.conversation_id===c.id;});
       var lm=lastMsgs[c.id]||null;
-      // Simple unread: if last message is newer than my last_read and not from me
       var unread=0;
       if(lm&&lm.user_id!==_myId){
         var myRead=myReads[c.id];
@@ -212,6 +216,8 @@ async function _loadConvs(){
     console.error('[MS] loadConvs',e);
     var el=document.getElementById('ms-conv-list');
     if(el)el.innerHTML='<div class="ms-splash"><div class="ms-splash-icon">&#9888;</div><div class="ms-splash-txt">Could not load conversations.</div></div>';
+  }finally{
+    _loadingConvs=false;
   }
 }
 
@@ -225,17 +231,20 @@ async function _openConv(convId){
   _unread=Math.max(0,_convs.reduce(function(s,c){return s+(c.unread||0);},0));
   _badge();
   _renderConvList(document.getElementById('ms-sb-search')?document.getElementById('ms-sb-search').value:'');
-  // Build thread UI
+  // Build thread UI immediately
   _renderThreadShell(conv);
-  // Load messages
+  // Load messages — guard against stale results if user switches conv mid-load
+  var fetchedFor=convId;
   try{
     var r=await _sb.from('nass_messages').select('*').eq('conversation_id',convId).order('created_at',{ascending:true}).limit(200);
     if(r.error)throw r.error;
+    if(_activeId!==fetchedFor)return;   // user switched — discard
     _msgs=r.data||[];
     _renderMsgs();
-    // Mark as read
+    // Mark as read (fire-and-forget)
     _sb.from('nass_conv_members').update({last_read_at:new Date().toISOString()}).eq('conversation_id',convId).eq('user_id',_myId).then(function(){});
   }catch(e){
+    if(_activeId!==fetchedFor)return;
     var el=document.getElementById('ms-msgs');
     if(el)el.innerHTML='<div class="ms-msgs-info">Could not load messages. Check connection.</div>';
   }
@@ -402,28 +411,29 @@ function _subscribe(){
         _unread++;
         _badge();
       }
-      _renderConvList(document.getElementById('ms-sb-search')?document.getElementById('ms-sb-search').value:'');
+      // Batch conv-list DOM update in rAF to avoid thrashing on rapid messages
+      if(_convListRafId)cancelAnimationFrame(_convListRafId);
+      _convListRafId=requestAnimationFrame(function(){
+        _convListRafId=null;
+        _renderConvList(document.getElementById('ms-sb-search')?document.getElementById('ms-sb-search').value:'');
+      });
     })
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'nass_conversations'},function(){
-      setTimeout(_loadConvs,600);
+      setTimeout(_loadConvs,400);
     })
     .subscribe();
 }
 
 // ── Badge on FAB ──────────────────────────────────────────────────
 function _badge(){
-  // Primary: badge inside the FAB (ms-fab-badge injected in HTML)
+  var txt=_unread>9?'9+':String(_unread);
+  var show=_unread>0;
+  // FAB badge (primary)
   var b=document.getElementById('ms-fab-badge');
-  // Fallback: topbar ms-btn badge
+  if(b){b.textContent=txt;b.style.display=show?'flex':'none';}
+  // Topbar ms-btn badge (fallback / secondary)
   var b2=document.getElementById('ms-badge');
-  if(_unread>0){
-    var txt=_unread>9?'9+':String(_unread);
-    if(b){b.textContent=txt;b.style.display='flex';}
-    if(b2){b2.textContent=txt;b2.style.display='flex';}
-  }else{
-    if(b)b.style.display='none';
-    if(b2)b2.style.display='none';
-  }
+  if(b2){b2.textContent=txt;b2.style.display=show?'flex':'none';}
 }
 
 // ── Load user list for pickers ────────────────────────────────────
@@ -482,34 +492,28 @@ async function _ensureId(){
 async function _startDM(u){
   _closeDmModal();
   await _ensureId();
-  // Check for existing direct conversation
-  try{
-    var myR=await _sb.from('nass_conv_members').select('conversation_id').eq('user_id',_myId);
-    var myIds=(myR.data||[]).map(function(r){return r.conversation_id;});
-    if(myIds.length){
-      var thR=await _sb.from('nass_conv_members').select('conversation_id').eq('user_id',u.id).in('conversation_id',myIds);
-      var shared=(thR.data||[]).map(function(r){return r.conversation_id;});
-      if(shared.length){
-        var tR=await _sb.from('nass_conversations').select('id').eq('type','direct').in('id',shared);
-        if(tR.data&&tR.data.length){
-          await _loadConvs();
-          _openConv(tR.data[0].id);
-          return;
-        }
-      }
-    }
-  }catch(e){console.warn('[MS] find DM',e);}
+  // Fast path: check in-memory _convs before hitting the DB
+  var existing=_convs.find(function(c){
+    return c.type==='direct'&&c.members&&c.members.some(function(m){return m.user_id===u.id;});
+  });
+  if(existing){_openConv(existing.id);return;}
   // Create new DM — generate UUID client-side to avoid RETURNING RLS race
   try{
     var cid=crypto.randomUUID();
+    var now=new Date().toISOString();
     var{error:ce}=await _sb.from('nass_conversations').insert({id:cid,type:'direct'});
     if(ce)throw ce;
-    await _sb.from('nass_conv_members').insert([
+    var members=[
       {conversation_id:cid,user_id:_myId,user_email:_myEmail},
       {conversation_id:cid,user_id:u.id,user_email:u.email}
-    ]);
-    await _loadConvs();
+    ];
+    await _sb.from('nass_conv_members').insert(members);
+    // Optimistic update — add to _convs immediately, no full reload needed
+    _convs.unshift({id:cid,type:'direct',name:null,last_msg_at:now,members:members,lastMsg:'',unread:0});
+    _renderConvList('');
     _openConv(cid);
+    // Background sync to get server-canonical data
+    setTimeout(_loadConvs,1000);
   }catch(e){console.error('[MS] create DM',e);alert('Could not start conversation. Please try again.');}
 }
 
@@ -574,13 +578,17 @@ async function _createGroup(){
   await _ensureId();
   try{
     var cid=crypto.randomUUID();
+    var now=new Date().toISOString();
     var{error:ce}=await _sb.from('nass_conversations').insert({id:cid,type:'group',name:name});
     if(ce)throw ce;
     var members=[{conversation_id:cid,user_id:_myId,user_email:_myEmail}];
     _grpSelected.forEach(function(u){members.push({conversation_id:cid,user_id:u.id,user_email:u.email});});
     await _sb.from('nass_conv_members').insert(members);
-    await _loadConvs();
+    // Optimistic update — show immediately, sync in background
+    _convs.unshift({id:cid,type:'group',name:name,last_msg_at:now,members:members,lastMsg:'',unread:0});
+    _renderConvList('');
     _openConv(cid);
+    setTimeout(_loadConvs,1000);
   }catch(e){console.error('[MS] create group',e);alert('Could not create group. Please try again.');}
 }
 
@@ -604,7 +612,6 @@ window._nassMsOpen=async function(){
   _panel.classList.add('ms-open');
   _open=true;
   var fab=document.getElementById('ncp-fab');if(fab)fab.classList.add('ms-btn-on');
-  var btn=document.getElementById('ms-btn');if(btn)btn.classList.add('ms-btn-on');
   _loadConvs();
   _subscribe();
 };
@@ -612,7 +619,6 @@ window._nassMsClose=function(){
   if(_panel)_panel.classList.remove('ms-open');
   _open=false;
   var fab=document.getElementById('ncp-fab');if(fab)fab.classList.remove('ms-btn-on');
-  var btn=document.getElementById('ms-btn');if(btn)btn.classList.remove('ms-btn-on');
 };
-window._nassMsOpen();
+// Note: _nassMsOpen() is called by index.html's script onload handler — no auto-call here.
 })();

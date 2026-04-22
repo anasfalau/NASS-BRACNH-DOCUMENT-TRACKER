@@ -147,7 +147,7 @@ if ('serviceWorker' in navigator) {
     <button class="tab"    id="tb-audit"     onclick="showView('audit')" style="display:none">&#128203; Activity Log</button>
   </div>
   <button class="btn btn-ghost dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Toggle dark mode">&#9790;</button>
-  <button class="btn btn-ghost" id="ms-btn" onclick="window._nassMsLaunch()" title="Open Messenger" style="display:none;position:relative">&#128172; Chat</button>
+  <button class="btn btn-ghost" id="ms-btn" onclick="window._nassMsLaunch()" title="Open Messenger" style="display:none">&#128172; Chat</button>
   <button class="btn btn-ghost" onclick="exportCSV()">&#8595; Export CSV</button>
   <button class="btn btn-ghost" id="btn-report" onclick="exportReport()" title="Generate formal report (current filters)">&#128196; Report</button>
   <button class="btn btn-gold"  onclick="openModal()">+ Add Record</button>
@@ -582,12 +582,9 @@ if ('serviceWorker' in navigator) {
   <button class="btn btn-gold" onclick="bulkUpdateStatus()">Apply</button>
   <button class="btn bulk-cancel" onclick="clearSel()">Cancel</button>
 </div>
-<!-- Messenger FAB — replaces AI chat icon; messenger.js lazy-loaded on first click -->
-<button id="ncp-fab" title="Open Messenger" onclick="window._nassMsLaunch()" style="display:none">
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-  </svg>
-  <span id="ms-fab-badge" class="ms-badge" style="display:none"></span>
+<!-- AI chat FAB — static shell; chat.js lazy-loaded on first click -->
+<button id="ncp-fab" title="NASS AI Assistant" onclick="window._nassAiLaunch()" style="display:none">
+  <span class="ncp-fab-icon">&#129302;</span>
 </button>
 <script>
 (function(){
@@ -595,6 +592,7 @@ if ('serviceWorker' in navigator) {
   // Shown only after auth (supabase-init.js calls nassShowFab())
   window.nassShowFab=function(){
     var f=document.getElementById('ncp-fab');if(f)f.style.display='';
+    var m=document.getElementById('ms-btn');if(m)m.style.display='';
   };
   // ── Messenger lazy-loader ─────────────────────────────────────
   var _msLoaded=false,_msLoading=false;
@@ -607,7 +605,7 @@ if ('serviceWorker' in navigator) {
     }
     if(_msLoading)return;
     _msLoading=true;
-    var s=document.createElement('script');s.src='messenger.js?v=20260426e';
+    var s=document.createElement('script');s.src='messenger.js?v=20260427';
     s.onload=function(){_msLoaded=true;_msLoading=false;if(typeof window._nassMsOpen==='function')window._nassMsOpen();};
     s.onerror=function(){_msLoading=false;alert('Could not load messenger. Check your connection.');};
     document.head.appendChild(s);
