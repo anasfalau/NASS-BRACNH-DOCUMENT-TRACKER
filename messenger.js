@@ -66,80 +66,62 @@ function _lastPreview(m){
 
 // ── Drag to move ─────────────────────────────────────────────────
 function _initDrag(panel){
-  // Attach drag to the sidebar header (always visible, natural grip area)
-  var handle=panel.querySelector('.ms-sb-hdr');
-  if(!handle)return;
-
   var dragging=false,ox=0,oy=0,pl=0,pt=0;
 
   function _anchorToTopLeft(){
-    // Convert CSS bottom/right to top/left so position arithmetic works
     var r=panel.getBoundingClientRect();
-    panel.style.bottom='auto';
-    panel.style.right='auto';
-    panel.style.left=r.left+'px';
-    panel.style.top=r.top+'px';
+    panel.style.bottom='auto';panel.style.right='auto';
+    panel.style.left=r.left+'px';panel.style.top=r.top+'px';
   }
-
   function _clamp(val,min,max){return Math.max(min,Math.min(max,val));}
 
   function _startDrag(cx,cy){
-    // Ignore on mobile (full-screen panel — no dragging needed)
     if(window.innerWidth<=700)return;
     if(!panel.style.left||panel.style.left==='')_anchorToTopLeft();
     var r=panel.getBoundingClientRect();
     pl=r.left;pt=r.top;ox=cx;oy=cy;
     dragging=true;
     panel.style.transition='none';
-    handle.style.cursor='grabbing';
     document.body.style.userSelect='none';
+    document.body.style.cursor='move';
   }
-
   function _moveDrag(cx,cy){
     if(!dragging)return;
-    var nl=pl+(cx-ox);
-    var nt=pt+(cy-oy);
-    var pw=panel.offsetWidth,ph=panel.offsetHeight;
-    // Keep at least 60px of panel visible on each edge
+    var nl=pl+(cx-ox),nt=pt+(cy-oy),pw=panel.offsetWidth;
     nl=_clamp(nl,-(pw-60),window.innerWidth-60);
     nt=_clamp(nt,0,window.innerHeight-60);
-    panel.style.left=nl+'px';
-    panel.style.top=nt+'px';
+    panel.style.left=nl+'px';panel.style.top=nt+'px';
   }
-
   function _endDrag(){
     if(!dragging)return;
     dragging=false;
-    handle.style.cursor='grab';
     document.body.style.userSelect='';
+    document.body.style.cursor='';
   }
 
-  // Mouse events
-  handle.addEventListener('mousedown',function(e){
-    if(e.button!==0||e.target.closest('button,input'))return;
-    e.preventDefault();
-    _startDrag(e.clientX,e.clientY);
-    document.addEventListener('mousemove',_onMove);
-    document.addEventListener('mouseup',_onUp);
+  // Attach to BOTH sidebar header and thread header — full top bar draggable
+  var handles=panel.querySelectorAll('.ms-sb-hdr,.ms-th-hdr');
+  handles.forEach(function(h){
+    h.addEventListener('mousedown',function(e){
+      if(e.button!==0||e.target.closest('button,input'))return;
+      e.preventDefault();
+      _startDrag(e.clientX,e.clientY);
+      document.addEventListener('mousemove',_onMove);
+      document.addEventListener('mouseup',_onUp);
+    });
+    h.addEventListener('touchstart',function(e){
+      if(e.target.closest('button,input'))return;
+      var t=e.touches[0];_startDrag(t.clientX,t.clientY);
+    },{passive:true});
+    h.addEventListener('touchmove',function(e){
+      if(!dragging)return;e.preventDefault();
+      var t=e.touches[0];_moveDrag(t.clientX,t.clientY);
+    },{passive:false});
+    h.addEventListener('touchend',_endDrag);
   });
+
   function _onMove(e){_moveDrag(e.clientX,e.clientY);}
   function _onUp(){_endDrag();document.removeEventListener('mousemove',_onMove);document.removeEventListener('mouseup',_onUp);}
-
-  // Touch events (tablets)
-  handle.addEventListener('touchstart',function(e){
-    if(e.target.closest('button,input'))return;
-    var t=e.touches[0];
-    _startDrag(t.clientX,t.clientY);
-  },{passive:true});
-  handle.addEventListener('touchmove',function(e){
-    if(!dragging)return;
-    e.preventDefault();
-    var t=e.touches[0];
-    _moveDrag(t.clientX,t.clientY);
-  },{passive:false});
-  handle.addEventListener('touchend',_endDrag);
-
-  handle.style.cursor='grab';
 }
 
 // ── Reset panel to default position ──────────────────────────────
