@@ -726,89 +726,133 @@ kbd{display:inline-flex;align-items:center;justify-content:center;padding:2px 7p
    DARK MODE
    ================================================================ */
 body.dark{
-  --bg-app:#0e1420;--bg-card:#172030;--bg-subtle:#1a2538;--bg-muted:#1e2c40;
-  --bg-panel:#1a2440;--bg-row-hover:#1e3a58;--bg-subject-hover:#1c3050;
-  --bg-focus-cell:#2e2800;--bg-input:#1a2538;--bg-pdf:#172030;
-  --fg-ink:#dde6f5;--fg-body:#b8c8e0;--fg-muted:#8aa2bf;--fg-subtle:#7090b0;
-  --fg-faint:#4a6080;--fg-placeholder:#3e5570;
-  --border-default:#2a3c58;--border-soft:#202e45;--border-row-b:#243450;
-  --border-row-r:#1e2e48;--border-divider:#1a2640;
-  --shadow-card:0 1px 5px rgba(0,0,0,0.5);
-  --shadow-modal:0 24px 64px rgba(0,0,0,0.75),0 4px 16px rgba(0,0,0,0.5);
-  --tag-bg:#1a2e50;--tag-border:#2a3e60;--tag-fg:#7eb3f5;
-  color:#dde6f5;
+  --bg-app:#0b1018;--bg-card:#14202e;--bg-subtle:#182434;--bg-muted:#1c2a3c;
+  --bg-panel:#182234;--bg-row-hover:#1f3d60;--bg-subject-hover:#1c3454;
+  --bg-focus-cell:#332d00;--bg-input:#182434;--bg-pdf:#14202e;
+  --fg-ink:#f0f4ff;--fg-body:#ccd8ee;--fg-muted:#a0bad8;--fg-subtle:#8aabcc;
+  --fg-faint:#526a88;--fg-placeholder:#405870;
+  --border-default:#3a5070;--border-soft:#283c56;--border-row-b:#2e4464;
+  --border-row-r:#263c58;--border-divider:#1c2e44;
+  --shadow-card:0 1px 6px rgba(0,0,0,0.6);
+  --shadow-modal:0 24px 64px rgba(0,0,0,0.8),0 4px 16px rgba(0,0,0,0.55);
+  --tag-bg:#1c3258;--tag-border:#2e4878;--tag-fg:#82bcff;
+  color:#f0f4ff;
 }
-/* ── Table cells — explicit rules beat !important variable cascade ── */
-body.dark td{background:#172030!important;color:#dde6f5!important;border-bottom-color:#243450!important;border-right-color:#1e2e48!important}
-body.dark tr:nth-child(even) td{background:#1a2640!important}
-body.dark tr:hover td{background:#1e3a58!important}
-body.dark .s-active td{background:#0d2040!important;color:#dde6f5!important}
-body.dark .s-completed td{background:#0a2018!important;color:#dde6f5!important}
-body.dark .s-hold td{background:#231c04!important;color:#dde6f5!important}
-body.dark .s-cancelled td{background:#1f0b14!important;color:#dde6f5!important}
-body.dark .s-filed td{background:#160c2c!important;color:#dde6f5!important}
-body.dark .row-overdue td{background:#20080e!important;color:#dde6f5!important}
-body.dark tr:hover.s-active td,body.dark tr:hover.s-completed td,body.dark tr:hover.s-hold td,body.dark tr:hover.s-cancelled td,body.dark tr:hover.s-filed td,body.dark tr:hover.row-overdue td{background:#1e3a58!important}
-/* ── Countdown / delay badges ── */
-body.dark .cdg-over{background:#2e0c10!important;color:#ff8a80!important}
-body.dark .cdg-urgent{background:#2a1800!important;color:#ffb74d!important}
-body.dark .cdg-warn{background:#252200!important;color:#ffe082!important}
-body.dark .flag-overdue{color:#ff6b6b!important}
-body.dark .flag-ontime{color:#69dd96!important}
+/* ── Base table cells ── */
+body.dark td{background:#14202e!important;color:#f0f4ff!important;border-bottom-color:#2e4464!important;border-right-color:#263c58!important}
+body.dark tr:nth-child(even) td{background:#182030!important}
+body.dark tr:hover td{background:#1f3d60!important}
+/* ── Status row tints — visible but not harsh ── */
+body.dark .s-active td{background:#0e2a50!important;color:#f0f4ff!important;border-left:3px solid #4a9eff}
+body.dark .s-completed td{background:#0c3020!important;color:#f0f4ff!important;border-left:3px solid #3ddd88}
+body.dark .s-hold td{background:#2e2408!important;color:#f0f4ff!important;border-left:3px solid #ffc030}
+body.dark .s-cancelled td{background:#2a0e18!important;color:#f0f4ff!important;border-left:3px solid #ff5577}
+body.dark .s-filed td{background:#1e1038!important;color:#f0f4ff!important;border-left:3px solid #b07aff}
+body.dark .row-overdue td{background:#300c14!important;color:#f0f4ff!important;border-left:3px solid #ff3355}
+/* remove double border on hover */
+body.dark tr:hover.s-active td,body.dark tr:hover.s-completed td,body.dark tr:hover.s-hold td,body.dark tr:hover.s-cancelled td,body.dark tr:hover.s-filed td,body.dark tr:hover.row-overdue td{background:#1f3d60!important}
+/* ── Countdown / delay badges — vivid ── */
+body.dark .cdg-over{background:#4a0e18!important;color:#ff8080!important;border:1px solid #ff3355}
+body.dark .cdg-urgent{background:#3a2000!important;color:#ffb040!important;border:1px solid #ff9020}
+body.dark .cdg-warn{background:#302800!important;color:#ffdf40!important;border:1px solid #ffc820}
+body.dark .flag-overdue{color:#ff6060!important;font-weight:800!important}
+body.dark .flag-ontime{color:#3ddd88!important;font-weight:800!important}
 /* ── Status inline pill ── */
-body.dark .stat-inl{background:#1e2c40!important;color:#b8c8e0!important}
+body.dark .stat-inl{background:#1c2a3c!important;color:#ccd8ee!important;border:1px solid #3a5070!important}
 /* ── UI bars ── */
-body.dark .stats,body.dark .sbar{background:#172030!important;border-color:#2a3c58!important}
-body.dark .bbar{background:#172030!important;border-color:#2a3c58!important}
-/* ── Tab active ── */
-body.dark .tab.on{background:#1a2f50!important;color:#7eb3f5!important}
-body.dark .tab{color:rgba(160,190,230,0.75)!important}
-body.dark .tab:hover{background:rgba(255,255,255,0.1)!important;color:#dde6f5!important}
+body.dark .stats,body.dark .sbar{background:#14202e!important;border-color:#3a5070!important}
+body.dark .bbar{background:#14202e!important;border-top-color:#4a9eff!important}
+body.dark .sbar label{color:#a0bad8!important}
+body.dark .fc{color:#a0bad8!important}
+/* ── Tabs ── */
+body.dark .tab.on{background:#1a3560!important;color:#82bcff!important;font-weight:800!important}
+body.dark .tab{color:rgba(180,205,240,0.7)!important}
+body.dark .tab:hover{background:rgba(255,255,255,0.12)!important;color:#f0f4ff!important}
+/* ── Stats tiles ── */
+body.dark .sc{background:#182434!important;border-color:#3a5070!important}
+body.dark .sn{color:#82bcff!important}
+body.dark .sn.r{color:#ff6060!important}
+body.dark .sn.g{color:#3ddd88!important}
+body.dark .sn.a{color:#ffc030!important}
+body.dark .sn.c{color:#ff5577!important}
+body.dark .sn.f{color:#b07aff!important}
+body.dark .sl{color:#8aabcc!important}
 /* ── Cards and modals ── */
-body.dark .acard{background:#172030!important;border-color:#2a3c58!important}
-body.dark .mbox,body.dark .detail-mbox,body.dark .detail-left{background:#172030!important}
-body.dark .mbg{background:rgba(0,8,20,0.88)!important}
-body.dark .dh-item{background:#1a2640!important;border-color:#2a3c58!important}
-body.dark .dh-who{color:#7eb3f5!important}
-body.dark .dh-old{color:#ff8a80!important}
-body.dark .dh-new{color:#69dd96!important}
+body.dark .acard{background:#14202e!important;border-color:#3a5070!important}
+body.dark .acard h3{color:#82bcff!important;border-color:#1c2e44!important}
+body.dark .mbox,body.dark .detail-mbox,body.dark .detail-left{background:#14202e!important}
+body.dark .mbox h3{color:#82bcff!important}
+body.dark .mf label{color:#a0bad8!important}
+body.dark .mbg{background:rgba(0,6,16,0.92)!important}
+body.dark .mbr{border-color:#1c2e44!important}
+body.dark .mcancel{background:#1c2a3c!important;color:#ccd8ee!important;border-color:#3a5070!important}
+body.dark .medit{background:#1c2a3c!important;color:#82bcff!important;border-color:#3a5070!important}
+/* ── Change history ── */
+body.dark .dh-item{background:#182434!important;border-color:#2e4464!important}
+body.dark .dh-who{color:#82bcff!important}
+body.dark .dh-when{color:#a0bad8!important}
+body.dark .dh-old{color:#ff8080!important}
+body.dark .dh-new{color:#3ddd88!important}
+body.dark .dh-arr{color:#8aabcc!important}
+body.dark .dh-section-title{color:#a0bad8!important;border-color:#1c2e44!important}
 /* ── Dashboard ── */
-body.dark .db-card,body.dark .db-tile{background:#172030!important}
-body.dark .db-od-tbl td{background:#172030!important;color:#dde6f5!important;border-color:#2a3c58!important}
-body.dark .db-od-row:hover td{background:#1e3a58!important}
-body.dark .db-pg-btn{background:#1e2c40!important;color:#b8c8e0!important;border-color:#2a3c58!important}
-body.dark .db-pg-active{background:#1a2f50!important;color:#7eb3f5!important}
+body.dark .db-card,body.dark .db-tile{background:#14202e!important;border-color:#3a5070!important}
+body.dark .db-card-title{color:#a0bad8!important}
+body.dark .db-tile-n{color:#82bcff!important}
+body.dark .db-tile-l{color:#8aabcc!important}
+body.dark .db-t-active .db-tile-n{color:#4a9eff!important}
+body.dark .db-t-over .db-tile-n{color:#ff6060!important}
+body.dark .db-t-comp .db-tile-n{color:#3ddd88!important}
+body.dark .db-t-hold .db-tile-n{color:#ffc030!important}
+body.dark .db-od-tbl td{background:#14202e!important;color:#f0f4ff!important;border-color:#3a5070!important}
+body.dark .db-od-row:hover td{background:#1f3d60!important}
+body.dark .db-pg-btn{background:#1c2a3c!important;color:#ccd8ee!important;border-color:#3a5070!important}
+body.dark .db-pg-active{background:#1a3560!important;color:#82bcff!important;border-color:#4a9eff!important}
 /* ── Kanban ── */
-body.dark .kb-card{background:#1a2538!important;border-color:#2a3c58!important}
-body.dark .kb-col{background:#172030!important}
-body.dark .kb-col-head{background:#172030!important;border-color:#2a3c58!important}
-body.dark .kb-col-title{color:#dde6f5!important}
-body.dark .kb-card-sub{color:#7eb3f5!important}
-body.dark .kb-card-officer{color:#8aa2bf!important}
-body.dark .kb-empty{color:#4a6080!important}
+body.dark .kb-card{background:#182434!important;border-color:#3a5070!important}
+body.dark .kb-col{background:#14202e!important}
+body.dark .kb-col-head{background:#14202e!important;border-color:#3a5070!important}
+body.dark .kb-col-title{color:#f0f4ff!important}
+body.dark .kb-col-cnt{background:#1c2a3c!important;color:#a0bad8!important}
+body.dark .kb-card-ref{color:#a0bad8!important}
+body.dark .kb-card-sub{color:#82bcff!important}
+body.dark .kb-card-officer{color:#8aabcc!important}
+body.dark .kb-card-foot{border-color:#2e4464!important}
+body.dark .kb-empty{color:#526a88!important}
+body.dark .kb-view-btn{border-color:#3ddd88!important;color:#3ddd88!important}
+body.dark .kb-view-btn:hover{background:#3ddd88!important;color:#0c3020!important}
 /* ── Popovers / overlays ── */
-body.dark .cvp,body.dark .shortcuts-help{background:#172030!important;border-color:#2a3c58!important}
-body.dark .cvp-row{color:#b8c8e0!important}
-body.dark .cvp-row:hover{background:#1e2c40!important}
-body.dark .sh-row{color:#b8c8e0!important;border-color:#1a2640!important}
-body.dark kbd{background:#1e2c40!important;border-color:#2a3c58!important;color:#dde6f5!important}
-/* ── Bottom bar & bulk ── */
-body.dark .bulk-bar{background:#0d1e35!important;border-color:#2a3c58!important;color:#dde6f5!important}
-body.dark .bulk-sel{background:#1a2538!important;color:#dde6f5!important;border-color:#2a3c58!important}
+body.dark .cvp,body.dark .shortcuts-help{background:#14202e!important;border-color:#3a5070!important}
+body.dark .cvp-title{color:#a0bad8!important;border-color:#1c2e44!important}
+body.dark .cvp-row{color:#ccd8ee!important}
+body.dark .cvp-row:hover{background:#1c2a3c!important}
+body.dark .sh-title{background:#1a3560!important}
+body.dark .sh-row{color:#ccd8ee!important;border-color:#1c2e44!important}
+body.dark kbd{background:#1c2a3c!important;border-color:#3a5070!important;color:#f0f4ff!important;box-shadow:0 1px 0 #3a5070!important}
+/* ── Bulk bar ── */
+body.dark .bulk-bar{background:#0e1e38!important;border-color:#3a5070!important;color:#f0f4ff!important}
+body.dark .bulk-sel{background:#182434!important;color:#f0f4ff!important;border-color:#3a5070!important}
 /* ── Inline status select ── */
-body.dark .inline-stat-sel{background:#1a2538!important;color:#dde6f5!important}
+body.dark .inline-stat-sel{background:#182434!important;color:#f0f4ff!important;border-color:#ffc030!important}
+/* ── Row action buttons ── */
+body.dark .view-btn{border-color:#3ddd88!important;color:#3ddd88!important}
+body.dark .view-btn:hover{background:#3ddd88!important;color:#0c3020!important}
+body.dark .edit-btn{border-color:#82bcff!important;color:#82bcff!important}
+body.dark .edit-btn:hover{background:#82bcff!important;color:#0e2a50!important}
+body.dark .del{color:#526a88!important}
+body.dark .del:hover{color:#fff!important}
 /* ── Misc ── */
-body.dark .u-role-card{background:#1e2c40!important}
-body.dark .sc{background:#1a2538!important}
-body.dark .rc{color:#8aa2bf!important}
-body.dark .resizer{background:#2a3c58!important}
-body.dark .view-btn{border-color:#69dd96!important;color:#69dd96!important}
-body.dark .view-btn:hover{background:#69dd96!important;color:#0a2018!important}
-body.dark .edit-btn{border-color:#7eb3f5!important;color:#7eb3f5!important}
-body.dark .edit-btn:hover{background:#7eb3f5!important;color:#0d2040!important}
+body.dark .u-role-card{background:#1c2a3c!important}
+body.dark .rc{color:#a0bad8!important}
+body.dark .resizer{background:#3a5070!important}
+body.dark .tag{background:#1c3258!important;border-color:#2e4878!important;color:#82bcff!important}
+body.dark .detail-audit-label{color:#8aabcc!important}
+body.dark .detail-label{color:#8aabcc!important}
+body.dark .detail-value{color:#f0f4ff!important}
+body.dark .detail-ref{color:#82bcff!important}
 /* ── Inputs (all contexts) ── */
-body.dark input,body.dark select,body.dark textarea{background:#1a2538!important;color:#dde6f5!important;border-color:#2a3c58!important}
-body.dark .sbar input{background:#1a2538 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234a6080' stroke-width='2.2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") 10px center no-repeat!important}
+body.dark input,body.dark select,body.dark textarea{background:#182434!important;color:#f0f4ff!important;border-color:#3a5070!important}
+body.dark .sbar input{background:#182434 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23526a88' stroke-width='2.2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") 10px center no-repeat!important}
 
 /* ── Dark mode toggle button ── */
 .dm-toggle{font-size:15px;padding:5px 10px!important;line-height:1}
@@ -817,15 +861,15 @@ body.dark .sbar input{background:#1a2538 url("data:image/svg+xml,%3Csvg xmlns='h
    SEARCH HIGHLIGHT
    ================================================================ */
 mark.srch-hl{background:#ffe066;color:#002655;border-radius:2px;padding:0 1px;font-weight:inherit}
-body.dark mark.srch-hl{background:#5c4600!important;color:#ffd966!important}
+body.dark mark.srch-hl{background:#664d00!important;color:#ffe066!important;border-radius:2px}
 
 /* ================================================================
    DUPLICATE BUTTON
    ================================================================ */
 .dup-btn{background:none;border:1px solid var(--nass-navy-700);color:var(--nass-navy-700);border-radius:var(--radius-sm);padding:2px 7px;cursor:pointer;font-size:12px;font-family:var(--font-sans);transition:background var(--ease-std),color var(--ease-std);line-height:1.4}
 .dup-btn:hover{background:var(--nass-navy-700);color:#fff}
-body.dark .dup-btn{border-color:#7eb3f5!important;color:#7eb3f5!important}
-body.dark .dup-btn:hover{background:#1a2f50!important;color:#dde6f5!important}
+body.dark .dup-btn{border-color:#82bcff!important;color:#82bcff!important}
+body.dark .dup-btn:hover{background:#1a3560!important;color:#f0f4ff!important}
 
 /* ================================================================
    INLINE STATUS EDIT
