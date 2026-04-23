@@ -924,9 +924,24 @@ td:has(.stat-inl):hover .stat-inl{background:var(--bg-row-hover);text-decoration
    ================================================================ */
 .ms-panel{position:fixed;bottom:96px;right:24px;width:clamp(520px,44vw,660px);height:clamp(420px,72vh,660px);background:var(--bg-card);border-radius:var(--radius-lg-card);box-shadow:0 24px 60px rgba(0,0,0,0.28),0 4px 16px rgba(0,0,0,0.12);z-index:902;display:none;flex-direction:row;overflow:hidden;border:1px solid var(--border-soft);min-width:320px;min-height:280px}
 .ms-panel.ms-open{display:flex}
-/* Custom resize handle — bottom-right corner gripper */
+/* Custom resize handle — bottom-right corner gripper (floating mode) */
 .ms-resize-hdl{position:absolute;bottom:0;right:0;width:18px;height:18px;cursor:nwse-resize;z-index:20;background:repeating-linear-gradient(135deg,var(--border-default) 0px,var(--border-default) 1.5px,transparent 1.5px,transparent 5px);border-radius:0 0 var(--radius-lg-card) 0;opacity:0.55;transition:opacity 0.15s}
 .ms-resize-hdl:hover{opacity:1}
+/* Dock resize handle — left edge (docked mode only) */
+.ms-resize-dock-hdl{position:absolute;top:0;left:0;width:5px;height:100%;cursor:ew-resize;z-index:20;display:none}
+.ms-resize-dock-hdl:hover{background:rgba(0,51,102,0.12)}
+/* ── Docked mode ── */
+:root{--ms-dock-w:380px}
+body.ms-docked .ms-panel{position:fixed!important;right:0!important;top:56px!important;bottom:0!important;left:auto!important;width:var(--ms-dock-w)!important;height:auto!important;border-radius:var(--radius-lg-card) 0 0 0!important;border-right:none!important;border-bottom:none!important;box-shadow:-4px 0 24px rgba(0,0,0,0.14)!important;min-width:0!important;min-height:0!important}
+body.ms-docked .ms-resize-hdl{display:none!important}
+body.ms-docked .ms-resize-dock-hdl{display:block!important}
+/* Push all views left when panel is docked */
+body.ms-docked #view-tracker,
+body.ms-docked #view-dashboard,
+body.ms-docked #view-kanban,
+body.ms-docked #view-users{margin-right:var(--ms-dock-w);transition:margin-right 0.2s}
+/* Dock button active state */
+.ms-dock-btn-on{background:rgba(255,255,255,0.32)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5)!important}
 
 /* ── Back button (mobile only, shown via @media) ── */
 .ms-back-btn{display:none;align-items:center;justify-content:center;background:none;border:none;color:var(--fg-subtle);cursor:pointer;padding:4px 6px;border-radius:6px;margin-right:4px;flex-shrink:0;transition:background 0.15s}
@@ -1081,6 +1096,7 @@ body.dark .ms-thread-empty{color:#526a88!important}
   /* Full-screen overlay */
   .ms-panel{position:fixed!important;inset:0!important;width:100%!important;height:100%!important;bottom:0!important;right:0!important;left:0!important;top:0!important;border-radius:0!important;z-index:1100!important;min-width:0!important;min-height:0!important}
   .ms-resize-hdl{display:none!important}
+  .ms-resize-dock-hdl{display:none!important}
   /* Sidebar takes full width when showing conv list */
   .ms-sidebar{width:100%!important;min-width:0!important}
   /* Stack: hide sidebar when a conv is open, show thread */
