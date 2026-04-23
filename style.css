@@ -384,7 +384,6 @@ th{position:relative}
 }
 
 /* ── Docked split-view: hide lowest-priority columns ─────────── */
-body.ms-docked .tw th:nth-child(1),body.ms-docked .tw td:nth-child(1),
 body.ms-docked .tw th:nth-child(7),body.ms-docked .tw td:nth-child(7),
 body.ms-docked .tw th:nth-child(8),body.ms-docked .tw td:nth-child(8),
 body.ms-docked .tw th:nth-child(9),body.ms-docked .tw td:nth-child(9),
