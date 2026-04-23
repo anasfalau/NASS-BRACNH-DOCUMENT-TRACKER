@@ -23,6 +23,8 @@ var _panel=null;
 var _grpSelected=[];  // users selected for new group
 var _loadingConvs=false;   // guard: prevent concurrent _loadConvs calls
 var _convListRafId=null;   // rAF id for batched conv-list renders
+var _docked=localStorage.getItem('ms-docked')==='1';
+var _dockW=Math.max(280,parseInt(localStorage.getItem('ms-dock-w')||'380',10));
 
 // ── Helpers ───────────────────────────────────────────────────────
 function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -77,6 +79,7 @@ function _initDrag(panel){
 
   function _startDrag(cx,cy){
     if(window.innerWidth<=700)return;
+    if(_docked)return; // no drag when snapped to side
     if(!panel.style.left||panel.style.left==='')_anchorToTopLeft();
     var r=panel.getBoundingClientRect();
     pl=r.left;pt=r.top;ox=cx;oy=cy;
@@ -180,6 +183,66 @@ function _initResize(panel,hdl){
   function _onResizeUp(){_endResize();document.removeEventListener('mousemove',_onResizeMove);document.removeEventListener('mouseup',_onResizeUp);}
 }
 
+// ── Dock panel to side ────────────────────────────────────────────
+function _toggleDock(){
+  _docked=!_docked;
+  localStorage.setItem('ms-docked',_docked?'1':'0');
+  _applyDock(true);
+}
+function _applyDock(animate){
+  var btn=document.getElementById('ms-dock-btn');
+  if(_docked){
+    document.documentElement.style.setProperty('--ms-dock-w',_dockW+'px');
+    if(_panel){
+      _resetPanelPos(); // clear any floating left/top overrides
+      if(animate){_panel.style.transition='width 0.2s,height 0.2s';}
+      setTimeout(function(){if(_panel)_panel.style.transition='';},250);
+    }
+    document.body.classList.add('ms-docked');
+    if(btn){btn.title='Undock (floating)';btn.classList.add('ms-dock-btn-on');}
+  }else{
+    document.body.classList.remove('ms-docked');
+    if(btn){btn.title='Dock panel to side';btn.classList.remove('ms-dock-btn-on');}
+  }
+}
+
+// ── Dock resize — drag left edge to change width ──────────────────
+function _initDockResize(panel,hdl){
+  var resizing=false,startX=0,startW=0;
+  hdl.addEventListener('mousedown',function(e){
+    if(e.button!==0||!_docked)return;
+    e.preventDefault();e.stopPropagation();
+    startX=e.clientX;startW=panel.offsetWidth;
+    resizing=true;
+    document.body.style.userSelect='none';
+    document.body.style.cursor='ew-resize';
+    document.addEventListener('mousemove',_onDockMove);
+    document.addEventListener('mouseup',_onDockUp);
+  });
+  hdl.addEventListener('touchstart',function(e){
+    if(!_docked)return;
+    var t=e.touches[0];startX=t.clientX;startW=panel.offsetWidth;resizing=true;
+  },{passive:true});
+  hdl.addEventListener('touchmove',function(e){
+    if(!resizing||!_docked)return;e.preventDefault();
+    var t=e.touches[0];_doDockResize(t.clientX);
+  },{passive:false});
+  hdl.addEventListener('touchend',_endDockResize);
+  function _doDockResize(cx){
+    // Drag left = wider, drag right = narrower (panel is right-anchored)
+    var nw=Math.max(280,Math.min(startW+(startX-cx),Math.round(window.innerWidth*0.7)));
+    _dockW=nw;
+    localStorage.setItem('ms-dock-w',nw);
+    document.documentElement.style.setProperty('--ms-dock-w',nw+'px');
+  }
+  function _endDockResize(){
+    if(!resizing)return;resizing=false;
+    document.body.style.userSelect='';document.body.style.cursor='';
+  }
+  function _onDockMove(e){_doDockResize(e.clientX);}
+  function _onDockUp(){_endDockResize();document.removeEventListener('mousemove',_onDockMove);document.removeEventListener('mouseup',_onDockUp);}
+}
+
 // ── Reset panel to default position ──────────────────────────────
 function _resetPanelPos(){
   if(!_panel)return;
@@ -206,6 +269,11 @@ function _build(){
             '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">'+
               '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>'+
               '<path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'+
+            '</svg>'+
+          '</button>'+
+          '<button class="ms-icon-btn ms-dock-btn" id="ms-dock-btn" title="Dock panel to side">'+
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'+
+              '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/>'+
             '</svg>'+
           '</button>'+
           '<button class="ms-icon-btn ms-close-btn" onclick="window._nassMsClose()" title="Close">'+
@@ -255,14 +323,24 @@ function _build(){
       '</div>'+
     '</div>';
 
-  // Custom resize handle
+  // Custom resize handle (floating mode — bottom-right)
   var _rh=document.createElement('div');
   _rh.className='ms-resize-hdl';
   _panel.appendChild(_rh);
 
+  // Dock resize handle (docked mode — left edge)
+  var _drh=document.createElement('div');
+  _drh.className='ms-resize-dock-hdl';
+  _panel.appendChild(_drh);
+
   document.body.appendChild(_panel);
   _initDrag(_panel);
   _initResize(_panel,_rh);
+  _initDockResize(_panel,_drh);
+
+  // Wire dock button and apply saved dock state
+  document.getElementById('ms-dock-btn').onclick=_toggleDock;
+  _applyDock(false);
 
   // Wire events
   document.getElementById('ms-new-dm-btn').onclick=_openDmModal;
@@ -762,6 +840,7 @@ window._nassMsOpen=async function(){
   if(!_panel)_build();
   _panel.classList.add('ms-open');
   _open=true;
+  _applyDock(false); // restore saved dock state each time panel opens
   var fab=document.getElementById('ncp-fab');if(fab)fab.classList.add('ms-btn-on');
   _loadConvs();
   _subscribe();
@@ -770,9 +849,9 @@ window._nassMsClose=function(){
   if(_panel){_panel.classList.remove('ms-open');_panel.classList.remove('ms-has-conv');}
   _open=false;_activeId=null;
   document.body.classList.remove('ms-chat-open');
+  document.body.classList.remove('ms-docked'); // remove while panel hidden; restored on next open
   var fab=document.getElementById('ncp-fab');if(fab)fab.classList.remove('ms-btn-on');
-  // Reset position so next open starts at default bottom-right
-  _resetPanelPos();
+  if(!_docked)_resetPanelPos(); // only reset floating position when not docked
 };
 // Note: _nassMsOpen() is called by index.html's script onload handler — no auto-call here.
 })();
