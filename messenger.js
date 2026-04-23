@@ -99,29 +99,85 @@ function _initDrag(panel){
     document.body.style.cursor='';
   }
 
-  // Attach to BOTH sidebar header and thread header — full top bar draggable
-  var handles=panel.querySelectorAll('.ms-sb-hdr,.ms-th-hdr');
-  handles.forEach(function(h){
-    h.addEventListener('mousedown',function(e){
-      if(e.button!==0||e.target.closest('button,input'))return;
-      e.preventDefault();
-      _startDrag(e.clientX,e.clientY);
-      document.addEventListener('mousemove',_onMove);
-      document.addEventListener('mouseup',_onUp);
-    });
-    h.addEventListener('touchstart',function(e){
-      if(e.target.closest('button,input'))return;
-      var t=e.touches[0];_startDrag(t.clientX,t.clientY);
-    },{passive:true});
-    h.addEventListener('touchmove',function(e){
-      if(!dragging)return;e.preventDefault();
-      var t=e.touches[0];_moveDrag(t.clientX,t.clientY);
-    },{passive:false});
-    h.addEventListener('touchend',_endDrag);
+  // Event delegation on panel — catches sidebar header AND dynamically-rendered thread header
+  panel.addEventListener('mousedown',function(e){
+    if(e.button!==0||e.target.closest('button,input,.ms-resize-hdl'))return;
+    if(!e.target.closest('.ms-sb-hdr,.ms-th-hdr'))return;
+    e.preventDefault();
+    _startDrag(e.clientX,e.clientY);
+    document.addEventListener('mousemove',_onMove);
+    document.addEventListener('mouseup',_onUp);
   });
+  panel.addEventListener('touchstart',function(e){
+    if(e.target.closest('button,input,.ms-resize-hdl'))return;
+    if(!e.target.closest('.ms-sb-hdr,.ms-th-hdr'))return;
+    var t=e.touches[0];_startDrag(t.clientX,t.clientY);
+  },{passive:true});
+  panel.addEventListener('touchmove',function(e){
+    if(!dragging)return;e.preventDefault();
+    var t=e.touches[0];_moveDrag(t.clientX,t.clientY);
+  },{passive:false});
+  panel.addEventListener('touchend',_endDrag);
 
   function _onMove(e){_moveDrag(e.clientX,e.clientY);}
   function _onUp(){_endDrag();document.removeEventListener('mousemove',_onMove);document.removeEventListener('mouseup',_onUp);}
+}
+
+// ── Custom resize handle ──────────────────────────────────────────
+function _initResize(panel,hdl){
+  var resizing=false,startX=0,startY=0,startW=0,startH=0;
+  var MIN_W=320,MIN_H=280;
+
+  function _startResize(cx,cy){
+    if(window.innerWidth<=700)return; // mobile is full-screen — no resize
+    var r=panel.getBoundingClientRect();
+    startX=cx;startY=cy;startW=r.width;startH=r.height;
+    resizing=true;
+    panel.style.transition='none';
+    document.body.style.userSelect='none';
+    document.body.style.cursor='nwse-resize';
+    // Switch from bottom/right anchoring to top/left so dimensions stay stable
+    if(!panel.style.left||panel.style.left===''){
+      panel.style.bottom='auto';panel.style.right='auto';
+      panel.style.left=r.left+'px';panel.style.top=r.top+'px';
+    }
+  }
+  function _doResize(cx,cy){
+    if(!resizing)return;
+    var nw=Math.max(MIN_W,startW+(cx-startX));
+    var nh=Math.max(MIN_H,startH+(cy-startY));
+    // Clamp to viewport
+    var r=panel.getBoundingClientRect();
+    nw=Math.min(nw,window.innerWidth-r.left-4);
+    nh=Math.min(nh,window.innerHeight-r.top-4);
+    panel.style.width=nw+'px';
+    panel.style.height=nh+'px';
+  }
+  function _endResize(){
+    if(!resizing)return;
+    resizing=false;
+    document.body.style.userSelect='';
+    document.body.style.cursor='';
+  }
+
+  hdl.addEventListener('mousedown',function(e){
+    if(e.button!==0)return;
+    e.preventDefault();e.stopPropagation();
+    _startResize(e.clientX,e.clientY);
+    document.addEventListener('mousemove',_onResizeMove);
+    document.addEventListener('mouseup',_onResizeUp);
+  });
+  hdl.addEventListener('touchstart',function(e){
+    var t=e.touches[0];_startResize(t.clientX,t.clientY);
+  },{passive:true});
+  hdl.addEventListener('touchmove',function(e){
+    if(!resizing)return;e.preventDefault();
+    var t=e.touches[0];_doResize(t.clientX,t.clientY);
+  },{passive:false});
+  hdl.addEventListener('touchend',_endResize);
+
+  function _onResizeMove(e){_doResize(e.clientX,e.clientY);}
+  function _onResizeUp(){_endResize();document.removeEventListener('mousemove',_onResizeMove);document.removeEventListener('mouseup',_onResizeUp);}
 }
 
 // ── Reset panel to default position ──────────────────────────────
@@ -199,8 +255,14 @@ function _build(){
       '</div>'+
     '</div>';
 
+  // Custom resize handle
+  var _rh=document.createElement('div');
+  _rh.className='ms-resize-hdl';
+  _panel.appendChild(_rh);
+
   document.body.appendChild(_panel);
   _initDrag(_panel);
+  _initResize(_panel,_rh);
 
   // Wire events
   document.getElementById('ms-new-dm-btn').onclick=_openDmModal;
