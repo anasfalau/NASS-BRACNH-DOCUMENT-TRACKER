@@ -368,6 +368,32 @@ th{position:relative}
   .adm-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
 }
 
+/* ── Tablet table (641–900px): hide low-priority columns ──────── */
+@media (max-width:900px) and (min-width:641px){
+  /* Hide: Serial, Last Action, Date Received, Date Moved, SLA, Remarks */
+  .tw th:nth-child(1),.tw td:nth-child(1),
+  .tw th:nth-child(6),.tw td:nth-child(6),
+  .tw th:nth-child(7),.tw td:nth-child(7),
+  .tw th:nth-child(8),.tw td:nth-child(8),
+  .tw th:nth-child(9),.tw td:nth-child(9),
+  .tw th:nth-child(13),.tw td:nth-child(13){display:none!important}
+  th{font-size:9.5px;padding:8px 5px}
+  td input[type=text],td input[type=date],td select{font-size:11.5px;padding:6px 5px}
+  .act-cell{width:90px;min-width:90px}
+  .view-btn,.edit-btn{padding:3px 5px;font-size:10.5px}
+}
+
+/* ── Docked split-view: hide lowest-priority columns ─────────── */
+body.ms-docked .tw th:nth-child(1),body.ms-docked .tw td:nth-child(1),
+body.ms-docked .tw th:nth-child(7),body.ms-docked .tw td:nth-child(7),
+body.ms-docked .tw th:nth-child(8),body.ms-docked .tw td:nth-child(8),
+body.ms-docked .tw th:nth-child(9),body.ms-docked .tw td:nth-child(9),
+body.ms-docked .tw th:nth-child(13),body.ms-docked .tw td:nth-child(13){display:none!important}
+body.ms-docked th{font-size:9.5px;padding:8px 5px}
+body.ms-docked td input[type=text],body.ms-docked td input[type=date],body.ms-docked td select{font-size:11.5px;padding:6px 5px}
+body.ms-docked .act-cell{width:90px;min-width:90px}
+body.ms-docked .view-btn,body.ms-docked .edit-btn{padding:3px 5px;font-size:10.5px}
+
 /* ── Mobile (≤ 640px) ─────────────────────────────────────────── */
 @media (max-width:640px){
 
