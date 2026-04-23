@@ -191,56 +191,74 @@ function _toggleDock(){
 }
 function _applyDock(animate){
   var btn=document.getElementById('ms-dock-btn');
+  // Ensure split bar exists
+  var bar=document.getElementById('ms-split-bar');
+  if(!bar){
+    bar=document.createElement('div');
+    bar.id='ms-split-bar';
+    bar.innerHTML='<div class="ms-split-grip"></div>';
+    document.body.appendChild(bar);
+    _initSplitBar(bar);
+  }
   if(_docked){
     document.documentElement.style.setProperty('--ms-dock-w',_dockW+'px');
     if(_panel){
-      _resetPanelPos(); // clear any floating left/top overrides
-      if(animate){_panel.style.transition='width 0.2s,height 0.2s';}
+      _resetPanelPos();
+      if(animate){_panel.style.transition='width 0.2s';}
       setTimeout(function(){if(_panel)_panel.style.transition='';},250);
     }
     document.body.classList.add('ms-docked');
+    bar.style.display='block';
     if(btn){btn.title='Undock (floating)';btn.classList.add('ms-dock-btn-on');}
   }else{
     document.body.classList.remove('ms-docked');
+    bar.style.display='none';
     if(btn){btn.title='Dock panel to side';btn.classList.remove('ms-dock-btn-on');}
   }
 }
 
-// ── Dock resize — drag left edge to change width ──────────────────
-function _initDockResize(panel,hdl){
-  var resizing=false,startX=0,startW=0;
-  hdl.addEventListener('mousedown',function(e){
-    if(e.button!==0||!_docked)return;
-    e.preventDefault();e.stopPropagation();
-    startX=e.clientX;startW=panel.offsetWidth;
-    resizing=true;
+// ── Split bar — draggable divider between content and chat ────────
+function _initSplitBar(bar){
+  var dragging=false,startX=0,startW=0;
+  function _startSplit(cx){
+    if(window.innerWidth<=700)return;
+    startX=cx;startW=_dockW;dragging=true;
     document.body.style.userSelect='none';
     document.body.style.cursor='ew-resize';
-    document.addEventListener('mousemove',_onDockMove);
-    document.addEventListener('mouseup',_onDockUp);
-  });
-  hdl.addEventListener('touchstart',function(e){
-    if(!_docked)return;
-    var t=e.touches[0];startX=t.clientX;startW=panel.offsetWidth;resizing=true;
-  },{passive:true});
-  hdl.addEventListener('touchmove',function(e){
-    if(!resizing||!_docked)return;e.preventDefault();
-    var t=e.touches[0];_doDockResize(t.clientX);
-  },{passive:false});
-  hdl.addEventListener('touchend',_endDockResize);
-  function _doDockResize(cx){
-    // Drag left = wider, drag right = narrower (panel is right-anchored)
-    var nw=Math.max(280,Math.min(startW+(startX-cx),Math.round(window.innerWidth*0.7)));
+    bar.classList.add('ms-split-dragging');
+  }
+  function _doSplit(cx){
+    if(!dragging)return;
+    // Moving bar left = wider chat; moving right = narrower chat
+    var nw=Math.max(280,Math.min(startW+(startX-cx),Math.round(window.innerWidth*0.72)));
     _dockW=nw;
     localStorage.setItem('ms-dock-w',nw);
     document.documentElement.style.setProperty('--ms-dock-w',nw+'px');
   }
-  function _endDockResize(){
-    if(!resizing)return;resizing=false;
+  function _endSplit(){
+    if(!dragging)return;
+    dragging=false;
     document.body.style.userSelect='';document.body.style.cursor='';
+    bar.classList.remove('ms-split-dragging');
   }
-  function _onDockMove(e){_doDockResize(e.clientX);}
-  function _onDockUp(){_endDockResize();document.removeEventListener('mousemove',_onDockMove);document.removeEventListener('mouseup',_onDockUp);}
+  bar.addEventListener('mousedown',function(e){
+    if(e.button!==0||!_docked)return;
+    e.preventDefault();
+    _startSplit(e.clientX);
+    document.addEventListener('mousemove',_onSplitMove);
+    document.addEventListener('mouseup',_onSplitUp);
+  });
+  bar.addEventListener('touchstart',function(e){
+    if(!_docked)return;
+    _startSplit(e.touches[0].clientX);
+  },{passive:true});
+  bar.addEventListener('touchmove',function(e){
+    if(!dragging)return;e.preventDefault();
+    _doSplit(e.touches[0].clientX);
+  },{passive:false});
+  bar.addEventListener('touchend',_endSplit);
+  function _onSplitMove(e){_doSplit(e.clientX);}
+  function _onSplitUp(){_endSplit();document.removeEventListener('mousemove',_onSplitMove);document.removeEventListener('mouseup',_onSplitUp);}
 }
 
 // ── Reset panel to default position ──────────────────────────────
@@ -323,22 +341,16 @@ function _build(){
       '</div>'+
     '</div>';
 
-  // Custom resize handle (floating mode — bottom-right)
+  // Custom resize handle (floating mode — bottom-right corner)
   var _rh=document.createElement('div');
   _rh.className='ms-resize-hdl';
   _panel.appendChild(_rh);
 
-  // Dock resize handle (docked mode — left edge)
-  var _drh=document.createElement('div');
-  _drh.className='ms-resize-dock-hdl';
-  _panel.appendChild(_drh);
-
   document.body.appendChild(_panel);
   _initDrag(_panel);
   _initResize(_panel,_rh);
-  _initDockResize(_panel,_drh);
 
-  // Wire dock button and apply saved dock state
+  // Wire dock button and restore saved dock state (split bar created inside _applyDock)
   document.getElementById('ms-dock-btn').onclick=_toggleDock;
   _applyDock(false);
 
@@ -497,14 +509,23 @@ function _renderThreadShell(conv){
     '</div>'+
     '<div class="ms-msgs" id="ms-msgs"><div class="ms-msgs-info">Loading&#8230;</div></div>'+
     '<div class="ms-inp-row">'+
-      '<input class="ms-inp" id="ms-inp" placeholder="Message&#8230; type @AI for assistant" maxlength="2000" autocomplete="off">'+
-      '<button class="ms-send" id="ms-send" title="Send (Enter)">'+
-        '<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>'+
+      '<div class="ms-inp-wrap">'+
+        '<input class="ms-inp" id="ms-inp" placeholder="Type a message\u2026  (@AI for assistant)" maxlength="2000" autocomplete="off">'+
+        '<span class="ms-inp-count" id="ms-inp-count"></span>'+
+      '</div>'+
+      '<button class="ms-send" id="ms-send" title="Send (Enter)" aria-label="Send message">'+
+        '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'+
+          '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>'+
+        '</svg>'+
       '</button>'+
     '</div>';
   var inp=document.getElementById('ms-inp');
   if(inp){
     inp.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();_send();}});
+    inp.addEventListener('input',function(){
+      var rem=2000-inp.value.length,cnt=document.getElementById('ms-inp-count');
+      if(cnt){cnt.textContent=rem<200?rem:'';cnt.className='ms-inp-count'+(rem<50?' ms-inp-count-warn':'');}
+    });
     setTimeout(function(){inp.focus();},80);
   }
   document.getElementById('ms-send').onclick=_send;
@@ -850,6 +871,7 @@ window._nassMsClose=function(){
   _open=false;_activeId=null;
   document.body.classList.remove('ms-chat-open');
   document.body.classList.remove('ms-docked'); // remove while panel hidden; restored on next open
+  var bar=document.getElementById('ms-split-bar');if(bar)bar.style.display='none';
   var fab=document.getElementById('ncp-fab');if(fab)fab.classList.remove('ms-btn-on');
   if(!_docked)_resetPanelPos(); // only reset floating position when not docked
 };
