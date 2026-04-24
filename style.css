@@ -398,6 +398,9 @@ body.ms-docked th{font-size:9.5px;padding:8px 5px}
 body.ms-docked td input[type=text],body.ms-docked td input[type=date],body.ms-docked td select{font-size:11.5px;padding:6px 5px}
 body.ms-docked .act-cell{width:90px;min-width:90px}
 body.ms-docked .view-btn,body.ms-docked .edit-btn{padding:3px 5px;font-size:10.5px}
+/* Constrain modals to content area so they don't overlap the docked chat panel */
+body.ms-docked .mbg{right:var(--ms-dock-w)}
+body.ms-docked .detail-mbox.detail-has-pdf{width:calc(97vw - var(--ms-dock-w));max-width:calc(97vw - var(--ms-dock-w))}
 
 /* ── Mobile (≤ 640px) ─────────────────────────────────────────── */
 @media (max-width:640px){
