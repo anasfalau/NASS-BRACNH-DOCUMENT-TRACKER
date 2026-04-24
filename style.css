@@ -1155,3 +1155,13 @@ body.dark .ms-thread-empty{color:#526a88!important}
   .ms-msg{max-width:88%}
   #ncp-fab{bottom:16px;right:16px;width:50px;height:50px}
 }
+
+/* ── Toast notifications ──────────────────────────────────────── */
+#toast-root{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.toast{padding:10px 18px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:600;font-family:var(--font-sans);color:#fff;box-shadow:0 4px 18px rgba(0,0,0,0.22);opacity:0;transform:translateY(12px);transition:opacity 0.22s ease,transform 0.22s ease;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 48px)}
+.toast.toast-in{opacity:1;transform:translateY(0)}
+.toast.toast-out{opacity:0;transform:translateY(12px)}
+.toast-success{background:var(--nass-navy-700)}
+.toast-error{background:var(--signal-danger)}
+.toast-warn{background:#b07000}
+.toast-info{background:var(--nass-navy-500)}
