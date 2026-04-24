@@ -39,7 +39,7 @@ function renderAdmin(){function draw(list,cid){var el=document.getElementById(ci
 function showAI(w){document.getElementById('ai-'+w).style.display='flex';document.getElementById('av-'+w).focus();}
 function hideAI(w){document.getElementById('ai-'+w).style.display='none';document.getElementById('av-'+w).value='';}
 function saveAI(w){var v=document.getElementById('av-'+w).value.trim();if(!v)return;var L=w==='officers'?officers:w==='fileIndex'?fileIndex:w==='statuses'?statuses:w==='locations'?locations:actions;if(!L.includes(v))L.push(v);saveData();hideAI(w);renderAdmin();refresh();}
-function showView(v){if((v==='admin'||v==='users')&&(window.userRole||'viewer')!=='superuser')return;if(v==='audit'&&!['editor','superuser'].includes(window.userRole||'viewer'))return;document.getElementById('tb-tracker').classList.toggle('on',v==='tracker');var tbd=document.getElementById('tb-dashboard');if(tbd)tbd.classList.toggle('on',v==='dashboard');document.getElementById('tb-admin').classList.toggle('on',v==='admin');var tbu=document.getElementById('tb-users');if(tbu)tbu.classList.toggle('on',v==='users');var tba=document.getElementById('tb-audit');if(tba)tba.classList.toggle('on',v==='audit');var tbk=document.getElementById('tb-kanban');if(tbk)tbk.classList.toggle('on',v==='kanban');document.getElementById('view-tracker').style.display=v==='tracker'?'block':'none';var vd=document.getElementById('view-dashboard');if(vd)vd.style.display=v==='dashboard'?'block':'none';document.getElementById('view-admin').style.display=v==='admin'?'flex':'none';var vu=document.getElementById('view-users');if(vu)vu.style.display=v==='users'?'block':'none';var va=document.getElementById('view-audit');if(va)va.style.display=v==='audit'?'block':'none';var vk=document.getElementById('view-kanban');if(vk)vk.style.display=v==='kanban'?'block':'none';if(v==='admin')renderAdmin();if(v==='users')loadUsersPanel();if(v==='dashboard'){renderDashboard();var _db=document.querySelector('#tb-dashboard .tab-badge');if(_db)_db.style.display='none';}if(v==='audit')loadAuditLog(1);if(v==='kanban')renderKanban();}
+function showView(v){if((v==='admin'||v==='users')&&(window.userRole||'viewer')!=='superuser')return;if(v==='audit'&&!['editor','superuser'].includes(window.userRole||'viewer'))return;var tbi=document.getElementById('tb-inbox');if(tbi)tbi.classList.toggle('on',v==='inbox');document.getElementById('tb-tracker').classList.toggle('on',v==='tracker');var tbd=document.getElementById('tb-dashboard');if(tbd)tbd.classList.toggle('on',v==='dashboard');document.getElementById('tb-admin').classList.toggle('on',v==='admin');var tbu=document.getElementById('tb-users');if(tbu)tbu.classList.toggle('on',v==='users');var tba=document.getElementById('tb-audit');if(tba)tba.classList.toggle('on',v==='audit');var tbk=document.getElementById('tb-kanban');if(tbk)tbk.classList.toggle('on',v==='kanban');document.getElementById('view-tracker').style.display=v==='tracker'?'block':'none';var vd=document.getElementById('view-dashboard');if(vd)vd.style.display=v==='dashboard'?'block':'none';document.getElementById('view-admin').style.display=v==='admin'?'flex':'none';var vu=document.getElementById('view-users');if(vu)vu.style.display=v==='users'?'block':'none';var va=document.getElementById('view-audit');if(va)va.style.display=v==='audit'?'block':'none';var vi=document.getElementById('view-inbox');if(vi)vi.style.display=v==='inbox'?'block':'none';var vk=document.getElementById('view-kanban');if(vk)vk.style.display=v==='kanban'?'block':'none';if(v==='admin'){renderAdmin();loadMappings();}if(v==='users')loadUsersPanel();if(v==='dashboard'){renderDashboard();var _db=document.querySelector('#tb-dashboard .tab-badge');if(_db)_db.style.display='none';}if(v==='audit')loadAuditLog(1);if(v==='kanban')renderKanban();if(v==='inbox')loadInbox();}
 // ── Dashboard ─────────────────────────────────────────────────────
 var _chartJsLoaded=false;
 function renderDashboard(){
@@ -144,6 +144,176 @@ async function loadRecordHistory(ri){
   }catch(e){list.innerHTML='<div class="dh-empty">Could not load history.</div>';}
 }
 function exportCSV(){var h=['#','Serial','File Ref No.','Subject','Current Location','Action Officer','Last Action','Date Received','Date Moved','SLA (Days)','Due Date','Status','Delay Flag','Remarks'];var _exp=getFiltered();var lines=[h.join(',')];_exp.forEach(function(r,i){lines.push([i+1].concat(r.map(function(v){return '"'+(v||'').replace(/"/g,"''")+'"';})).join(','));});var csv='\uFEFF'+lines.join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='NASS_Branch_WorkflowTracker_2026.csv';a.click();}
+
+// ── Inbox ──────────────────────────────────────────────────────────
+var _inboxLastSeen=null;
+async function loadInbox(){
+  var el=document.getElementById('inbox-list');
+  var sub=document.getElementById('inbox-sub');
+  if(!el)return;
+  el.innerHTML='<div class="inbox-empty">Loading…</div>';
+  try{
+    // Get this user's mapped officer name(s)
+    var mRes=await window._sb.from('nass_officer_mappings').select('officer_name').eq('user_id',(window.userSession&&window.userSession.user&&window.userSession.user.id)||'');
+    if(mRes.error)throw mRes.error;
+    var myOfficers=(mRes.data||[]).map(function(m){return m.officer_name;});
+    if(!myOfficers.length){
+      el.innerHTML='<div class="inbox-empty">&#128274; No officer mapping found.<br><span style="font-size:11px;color:var(--fg-faint)">Ask your admin to map your account to an officer name.</span></div>';
+      if(sub)sub.textContent='No officer assigned to your account';
+      return;
+    }
+    // Get last-seen timestamp
+    var seenRes=await window._sb.from('nass_inbox_seen').select('last_seen_at').eq('user_id',(window.userSession&&window.userSession.user&&window.userSession.user.id)||'').maybeSingle();
+    _inboxLastSeen=seenRes.data?new Date(seenRes.data.last_seen_at):new Date(0);
+    // Fetch assigned records from Supabase
+    var rRes=await window._sb.from('nass_records').select('*').in('action_officer',myOfficers).order('updated_at',{ascending:false}).limit(100);
+    if(rRes.error)throw rRes.error;
+    var docs=rRes.data||[];
+    if(!docs.length){
+      el.innerHTML='<div class="inbox-empty">&#9989; No documents assigned to you.</div>';
+      if(sub)sub.textContent='Officer: '+myOfficers.join(', ');
+      return;
+    }
+    var unread=docs.filter(function(d){return new Date(d.updated_at||d.created_at)>_inboxLastSeen;}).length;
+    if(sub)sub.textContent='Officer: '+myOfficers.join(', ')+' · '+docs.length+' document'+(docs.length===1?'':'s')+(unread?' · '+unread+' new':'');
+    el.innerHTML='';
+    docs.forEach(function(d){
+      var isNew=new Date(d.updated_at||d.created_at)>_inboxLastSeen;
+      var fl=d.flag||'';
+      var div=document.createElement('div');
+      div.className='inbox-item'+(isNew?' inbox-item-new':'');
+      var statusCls=d.status==='Active'?'ds-active':d.status==='Completed'?'ds-completed':d.status==='On Hold'?'ds-hold':d.status==='Cancelled'?'ds-cancelled':d.status==='Filed'?'ds-filed':'';
+      var flagBadge=fl==='OVERDUE'?'<span class="inbox-flag flag-overdue">OVERDUE</span>':fl==='ON TIME'?'<span class="inbox-flag flag-ontime">ON TIME</span>':'';
+      div.innerHTML=
+        (isNew?'<span class="inbox-dot"></span>':'')+
+        '<div class="inbox-body">'+
+          '<div class="inbox-ref">'+_esc(d.file_ref||'—')+'</div>'+
+          '<div class="inbox-subj">'+_esc((d.subject||'').substring(0,120))+'</div>'+
+          '<div class="inbox-meta">'+
+            '<span class="detail-status '+statusCls+'">'+_esc(d.status||'')+'</span>'+
+            flagBadge+
+            '<span class="inbox-date">'+(d.updated_at?new Date(d.updated_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'')+
+            '</span>'+
+          '</div>'+
+        '</div>'+
+        '<button class="inbox-open-btn" title="Open record">&#8594;</button>';
+      div.querySelector('.inbox-open-btn').addEventListener('click',function(){
+        // Find in local rows array and open detail
+        var idx=rows.findIndex(function(r){return (r[1]||'')===(d.file_ref||'');});
+        if(idx>=0){showView('tracker');openDetail(idx);}
+        else{showView('tracker');}
+      });
+      el.appendChild(div);
+    });
+    // Mark as seen
+    markInboxSeen();
+    updateInboxBadge(0);
+  }catch(e){
+    console.error('[Inbox]',e);
+    el.innerHTML='<div class="inbox-empty">&#9888; Could not load inbox. Check connection.</div>';
+  }
+}
+async function markInboxSeen(){
+  try{
+    var uid=(window.userSession&&window.userSession.user&&window.userSession.user.id)||'';
+    if(!uid)return;
+    await window._sb.from('nass_inbox_seen').upsert({user_id:uid,last_seen_at:new Date().toISOString()},{onConflict:'user_id'});
+  }catch(e){}
+}
+function updateInboxBadge(count){
+  var b=document.getElementById('inbox-badge');
+  if(!b)return;
+  if(count>0){b.textContent=count>9?'9+':String(count);b.style.display='';}
+  else{b.style.display='none';}
+}
+async function checkInboxUnread(){
+  try{
+    var uid=(window.userSession&&window.userSession.user&&window.userSession.user.id)||'';
+    if(!uid)return;
+    var mRes=await window._sb.from('nass_officer_mappings').select('officer_name').eq('user_id',uid);
+    if(mRes.error||!mRes.data||!mRes.data.length)return;
+    var myOfficers=mRes.data.map(function(m){return m.officer_name;});
+    var seenRes=await window._sb.from('nass_inbox_seen').select('last_seen_at').eq('user_id',uid).maybeSingle();
+    var lastSeen=seenRes.data?new Date(seenRes.data.last_seen_at):new Date(0);
+    var rRes=await window._sb.from('nass_records').select('id,updated_at,created_at').in('action_officer',myOfficers).gt('updated_at',lastSeen.toISOString());
+    var count=(rRes.data||[]).length;
+    updateInboxBadge(count);
+    var tbi=document.getElementById('tb-inbox');
+    if(tbi)tbi.style.display='';
+  }catch(e){}
+}
+
+// ── Officer Mapping (admin) ────────────────────────────────────────
+var _mappings=[];
+var _allUsers=[];
+async function loadMappings(){
+  var el=document.getElementById('mapping-list');
+  if(!el)return;
+  el.innerHTML='<div style="color:var(--fg-subtle);font-size:12px">Loading…</div>';
+  try{
+    var [mRes,uRes]=await Promise.all([
+      window._sb.from('nass_officer_mappings').select('*').order('officer_name'),
+      window._sb.from('nass_profiles').select('user_id,email,role').order('email')
+    ]);
+    _mappings=(mRes.data||[]);
+    _allUsers=(uRes.data||[]);
+    renderMappings();
+  }catch(e){
+    el.innerHTML='<div style="color:var(--signal-danger);font-size:12px">Failed to load mappings.</div>';
+  }
+}
+function renderMappings(){
+  var el=document.getElementById('mapping-list');
+  if(!el)return;
+  var html='<table class="map-tbl"><thead><tr><th>Officer Name</th><th>Assigned User</th><th></th></tr></thead><tbody>';
+  officers.forEach(function(off){
+    var cur=_mappings.find(function(m){return m.officer_name===off;});
+    var curUserId=cur?cur.user_id:'';
+    html+='<tr><td class="map-off">'+_esc(off)+'</td><td>';
+    html+='<select class="map-sel" data-off="'+_esc(off)+'"><option value="">— Unassigned —</option>';
+    _allUsers.forEach(function(u){
+      html+='<option value="'+_esc(u.user_id)+'"'+(u.user_id===curUserId?' selected':'')+'>'+_esc((u.email||'').split('@')[0])+' ('+_esc(u.email||'')+')</option>';
+    });
+    html+='</select></td><td>';
+    if(cur)html+='<button class="btn-map-clear" data-off="'+_esc(off)+'" title="Remove mapping">&times;</button>';
+    html+='</td></tr>';
+  });
+  html+='</tbody></table>';
+  html+='<button class="btn btn-navy" style="margin-top:14px" onclick="saveMappings()">&#128190; Save Mappings</button>';
+  el.innerHTML=html;
+  el.querySelectorAll('.btn-map-clear').forEach(function(btn){
+    btn.addEventListener('click',async function(){
+      var off=this.dataset.off;
+      await window._sb.from('nass_officer_mappings').delete().eq('officer_name',off);
+      await loadMappings();
+      showToast('Mapping removed for '+off,'success');
+    });
+  });
+}
+async function saveMappings(){
+  var sels=document.querySelectorAll('.map-sel');
+  var toUpsert=[],toDelete=[];
+  sels.forEach(function(sel){
+    var off=sel.dataset.off;
+    var uid=sel.value;
+    var userObj=_allUsers.find(function(u){return u.user_id===uid;});
+    if(uid&&userObj){
+      toUpsert.push({officer_name:off,user_id:uid,user_email:userObj.email});
+    }else{
+      toDelete.push(off);
+    }
+  });
+  try{
+    if(toUpsert.length)await window._sb.from('nass_officer_mappings').upsert(toUpsert,{onConflict:'officer_name'});
+    if(toDelete.length)await window._sb.from('nass_officer_mappings').delete().in('officer_name',toDelete);
+    _mappings=toUpsert;
+    showToast('Mappings saved successfully.','success');
+    await loadMappings();
+  }catch(e){
+    showToast('Failed to save mappings: '+e.message,'error');
+  }
+}
+
 function applyRolePermissions(){var r=window.userRole||'viewer';var isSU=r==='superuser';var isEd=r==='editor'||isSU;if(!isEd){document.querySelectorAll('[onclick="openModal()"]').forEach(function(b){b.style.display='none';});var exp=document.querySelector('[onclick="exportCSV()"]');if(exp)exp.style.display='none';}document.getElementById('tb-admin').style.display=isSU?'':'none';var tbu=document.getElementById('tb-users');if(tbu)tbu.style.display=isSU?'':'none';var tba=document.getElementById('tb-audit');if(tba)tba.style.display=isEd?'':'none';var tbk2=document.getElementById('tb-kanban');if(tbk2)tbk2.style.display=isEd?'':'none';if(!isEd){var dem=document.querySelector('#detail-mbg .mok');if(dem)dem.style.display='none';}var rb=document.getElementById('nass-user-role-badge');if(rb){rb.textContent=r.charAt(0).toUpperCase()+r.slice(1);rb.style.display='inline-block';}}
 var MU_URL='https://sblqmpmawkogbbzzkwxt.supabase.co/functions/v1/manage-users';
 async function _muReq(method,body){var s=(await window._sb.auth.getSession()).data.session;var o={method:method,headers:{Authorization:'Bearer '+s.access_token,'Content-Type':'application/json'}};if(body)o.body=JSON.stringify(body);var resp=await fetch(MU_URL,o);var d=await resp.json().catch(function(){return{};});if(!resp.ok)throw new Error(d.error||'Request failed ('+resp.status+')');return d;}
