@@ -23,6 +23,8 @@ var _panel=null;
 var _grpSelected=[];  // users selected for new group
 var _loadingConvs=false;   // guard: prevent concurrent _loadConvs calls
 var _convListRafId=null;   // rAF id for batched conv-list renders
+var _skipIds=new Set();
+var _presenceCh=null,_typingTimer=null,_presenceConvId=null;
 var _docked=localStorage.getItem('ms-docked')==='1';
 var _dockW=Math.max(280,parseInt(localStorage.getItem('ms-dock-w')||'380',10));
 
@@ -457,6 +459,7 @@ async function _openConv(convId){
   document.body.classList.add('ms-chat-open');
   // Build thread UI immediately
   _renderThreadShell(conv);
+  _initPresence(convId);
   // Load messages — guard against stale results if user switches conv mid-load
   var fetchedFor=convId;
   try{
@@ -508,7 +511,7 @@ function _renderThreadShell(conv){
       '<div style="flex:1;min-width:0"><div class="ms-th-nm">'+_esc(nm)+'</div>'+sub+'</div>'+
     '</div>'+
     '<div class="ms-msgs" id="ms-msgs"><div class="ms-msgs-info">Loading&#8230;</div></div>'+
-    '<div class="ms-inp-row">'+
+    '<div class="ms-typing-bar" id="ms-typing-bar"></div>'+'<div class="ms-inp-row">'+
       '<div class="ms-inp-wrap">'+
         '<input class="ms-inp" id="ms-inp" placeholder="Type a message\u2026  (@AI for assistant)" maxlength="2000" autocomplete="off">'+
         '<span class="ms-inp-count" id="ms-inp-count"></span>'+
@@ -526,6 +529,7 @@ function _renderThreadShell(conv){
       var rem=2000-inp.value.length,cnt=document.getElementById('ms-inp-count');
       if(cnt){cnt.textContent=rem<200?rem:'';cnt.className='ms-inp-count'+(rem<50?' ms-inp-count-warn':'');}
     });
+    inp.addEventListener('input',_onMsTyping);
     setTimeout(function(){inp.focus();},80);
   }
   document.getElementById('ms-send').onclick=_send;
@@ -589,12 +593,49 @@ function _scrollBottom(){var el=document.getElementById('ms-msgs');if(el)request
 
 // ── Typing indicator ──────────────────────────────────────────────
 function _showTyping(){
-  var el=document.getElementById('ms-msgs');if(!el)return;
+  var el=document.getElementById('ms-msgs');if(!el)return null;
   var t=document.createElement('div');t.id='ms-typing';t.className='ms-msg ms-ai';
-  t.innerHTML='<div class="ms-bbl-av">&#129302;</div><div class="ms-bbl-body"><div class="ms-bbl-sender">NASS AI</div><div class="ms-bbl ms-dots"><span></span><span></span><span></span></div></div>';
-  el.appendChild(t);_scrollBottom();
+  t.innerHTML='<div class="ms-bbl-av">&#129302;</div><div class="ms-bbl-body"><div class="ms-bbl-sender">NASS AI</div><div class="ms-bbl ms-dots" id="ms-typing-bbl"><span></span><span></span><span></span></div></div>';
+  el.appendChild(t);_scrollBottom();return t;
 }
 function _hideTyping(){var t=document.getElementById('ms-typing');if(t)t.remove();}
+
+// ── Optimistic send bubble ────────────────────────────────────────
+function _appendOptimistic(content){
+  var el=document.getElementById('ms-msgs');if(!el)return null;
+  var splash=el.querySelector('.ms-splash');if(splash)splash.remove();
+  var div=document.createElement('div');
+  div.className='ms-msg ms-mine ms-optimistic';
+  div.innerHTML='<div class="ms-bbl-av">'+_esc(_myEmail[0]||'?').toUpperCase()+'</div><div class="ms-bbl-body"><div class="ms-bbl">'+_esc(content)+'</div><div class="ms-bbl-ts ms-ts-pending">sending…</div></div>';
+  el.appendChild(div);_scrollBottom();return div;
+}
+
+// ── Presence / typing indicator ───────────────────────────────────
+function _initPresence(convId){
+  if(_presenceCh&&_presenceConvId===convId)return;
+  if(_presenceCh){_presenceCh.unsubscribe();_presenceCh=null;}
+  _presenceConvId=convId;
+  _presenceCh=_sb.channel('ms-presence-'+convId)
+    .on('presence',{event:'sync'},_updateTypingBar)
+    .subscribe(async function(status){
+      if(status==='SUBSCRIBED'){await _presenceCh.track({user:_myEmail,typing:false,conv:convId});}
+    });
+}
+function _onMsTyping(){
+  if(!_presenceCh)return;
+  _presenceCh.track({user:_myEmail,typing:true,conv:_presenceConvId});
+  clearTimeout(_typingTimer);
+  _typingTimer=setTimeout(function(){if(_presenceCh)_presenceCh.track({user:_myEmail,typing:false,conv:_presenceConvId});},2000);
+}
+function _updateTypingBar(){
+  var state=_presenceCh.presenceState();
+  var typers=[];
+  Object.values(state).forEach(function(arr){
+    arr.forEach(function(p){if(p.typing&&p.user&&p.user!==_myEmail)typers.push(p.user.split('@')[0]);});
+  });
+  var bar=document.getElementById('ms-typing-bar');
+  if(bar)bar.textContent=typers.length?typers.join(', ')+(typers.length===1?' is':' are')+' typing…':'';
+}
 
 // ── Send message ──────────────────────────────────────────────────
 async function _send(){
@@ -603,37 +644,70 @@ async function _send(){
   var content=(inp.value||'').trim();if(!content)return;
   inp.value='';inp.disabled=true;
   var sb=document.getElementById('ms-send');if(sb)sb.disabled=true;
+  if(_presenceCh)_presenceCh.track({user:_myEmail,typing:false,conv:_activeId});
   var sess=null;
   try{sess=(await _sb.auth.getSession()).data.session;}catch(e){}
+  // Optimistic bubble — show message immediately
+  var optDiv=_appendOptimistic(content);
   // Insert user message
+  var insertedId=null;
   try{
     var ins=await _sb.from('nass_messages').insert({
       conversation_id:_activeId,user_id:_myId,user_email:_myEmail,
       content:content,is_ai_response:false
-    });
+    }).select('id').single();
     if(ins.error)throw ins.error;
+    insertedId=ins.data&&ins.data.id;
+    if(insertedId){_skipIds.add(insertedId);if(optDiv)optDiv.dataset.mid=insertedId;}
+    var tsEl=optDiv&&optDiv.querySelector('.ms-bbl-ts');
+    if(tsEl){tsEl.textContent=_fmt(new Date().toISOString());tsEl.classList.remove('ms-ts-pending');}
+    if(optDiv)optDiv.classList.remove('ms-optimistic');
+    _msgs.push({id:insertedId,conversation_id:_activeId,user_id:_myId,user_email:_myEmail,content:content,is_ai_response:false,created_at:new Date().toISOString()});
   }catch(e){
     console.error('[MS] send',e);
+    if(optDiv)optDiv.remove();
     inp.disabled=false;if(sb)sb.disabled=false;inp.focus();return;
   }
-  // @AI trigger
+  // @AI trigger — SSE streaming response with tracker data
   if(sess&&/@ai/i.test(content)){
     var query=content.replace(/@ai\s*/gi,'').trim()||content;
-    _showTyping();
+    var streamDiv=_showTyping();
+    var streamBbl=document.getElementById('ms-typing-bbl');
+    var fullText='';
     try{
+      var allRows=JSON.parse(localStorage.getItem('nassRows')||'[]');
+      var curRows=allRows.filter(function(r){return Array.isArray(r)&&r[1];});
+      if(curRows.length>500)curRows=curRows.slice(-500);
       var resp=await fetch(AI_URL,{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+sess.access_token},
-        body:JSON.stringify({message:query,context:[]})
+        body:JSON.stringify({messages:[{role:'user',content:query}],rows:curRows})
       });
-      var data=await resp.json().catch(function(){return{};});
-      var reply=data.reply||data.message||data.content||data.response||'Sorry, I could not process that right now.';
-      _hideTyping();
-      await _sb.from('nass_messages').insert({
+      if(!resp.ok)throw new Error('AI '+resp.status);
+      var reader=resp.body.getReader();var decoder=new TextDecoder();
+      if(streamBbl)streamBbl.innerHTML='';
+      while(true){
+        var chunk=await reader.read();if(chunk.done)break;
+        var raw=decoder.decode(chunk.value,{stream:true});
+        var lines=raw.split('\n');
+        for(var i=0;i<lines.length;i++){
+          var line=lines[i];if(!line.startsWith('data: '))continue;
+          var data=line.slice(6).trim();if(data==='[DONE]')break;
+          try{var parsed=JSON.parse(data);var delta=(parsed.delta&&parsed.delta.text)?parsed.delta.text:'';if(delta){fullText+=delta;if(streamBbl)streamBbl.textContent=fullText;_scrollBottom();}}catch(e2){}
+        }
+      }
+    }catch(e){fullText=fullText||'Sorry, I could not process that right now.';}
+    _hideTyping();
+    var aiId=null;
+    try{
+      var aiIns=await _sb.from('nass_messages').insert({
         conversation_id:_activeId,user_id:_myId,user_email:'nass.ai@system',
-        content:reply,is_ai_response:true
-      });
-    }catch(e){_hideTyping();console.warn('[MS] AI',e);}
+        content:fullText,is_ai_response:true
+      }).select('id').single();
+      if(!aiIns.error&&aiIns.data){aiId=aiIns.data.id;_skipIds.add(aiId);}
+    }catch(e){}
+    var aiMsg={id:aiId,conversation_id:_activeId,user_id:_myId,user_email:'nass.ai@system',content:fullText,is_ai_response:true,created_at:new Date().toISOString()};
+    _appendLive(aiMsg);
   }
   inp.disabled=false;if(sb)sb.disabled=false;inp.focus();
 }
@@ -653,6 +727,7 @@ function _subscribe(){
       }
       if(m.conversation_id===_activeId){
         if(_msgs.find(function(x){return x.id===m.id;}))return;
+        if(_skipIds.has(m.id)){_skipIds.delete(m.id);_msgs.push(m);return;}
         _appendLive(m);
         // Mark read
         _sb.from('nass_conv_members').update({last_read_at:new Date().toISOString()}).eq('conversation_id',_activeId).eq('user_id',_myId).then(function(){});
@@ -869,6 +944,8 @@ window._nassMsOpen=async function(){
 window._nassMsClose=function(){
   if(_panel){_panel.classList.remove('ms-open');_panel.classList.remove('ms-has-conv');}
   _open=false;_activeId=null;
+  if(_presenceCh){_presenceCh.unsubscribe();_presenceCh=null;_presenceConvId=null;}
+  clearTimeout(_typingTimer);
   document.body.classList.remove('ms-chat-open');
   document.body.classList.remove('ms-docked'); // remove while panel hidden; restored on next open
   var bar=document.getElementById('ms-split-bar');if(bar)bar.style.display='none';

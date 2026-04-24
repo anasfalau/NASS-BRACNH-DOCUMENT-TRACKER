@@ -7,7 +7,8 @@
   'use strict';
 
   const EDGE_URL  = 'https://sblqmpmawkogbbzzkwxt.supabase.co/functions/v1/chat';
-  const MAX_HIST  = 12;   // conversation turns to send as context
+  const MAX_HIST  = 12;
+  const HIST_KEY  = 'nassAiHistory';
   const STARTERS  = [
     'Which documents are currently overdue?',
     'Summarise workload per officer',
@@ -17,13 +18,13 @@
     'Show recently received documents',
   ];
 
-  let chatHistory = [];   // { role, content }[]
+  let chatHistory = [];
   let isStreaming  = false;
   let sugHidden    = false;
+  let lastUserMsg  = '';
 
   // ── Build DOM ────────────────────────────────────────────────────
   function buildUI() {
-    // Floating action button — reuse static shell from index.html if present
     var fab = document.getElementById('ncp-fab');
     if (!fab) {
       fab = el('button', { id: 'ncp-fab', title: 'NASS AI Assistant' });
@@ -32,7 +33,6 @@
     }
     fab.onclick = togglePanel;
 
-    // Chat panel
     const panel = el('div', { id: 'ncp-panel' });
     panel.innerHTML = `
       <div class="ncp-header">
@@ -62,7 +62,6 @@
     `;
     document.body.appendChild(panel);
 
-    // Render starter chips
     const startEl = document.getElementById('ncp-starters');
     STARTERS.forEach(function (s) {
       const btn = document.createElement('button');
@@ -72,7 +71,12 @@
       startEl.appendChild(btn);
     });
 
-    // Welcome bubble
+    // Restore persisted conversation context (API history only, not visual)
+    try {
+      var saved = localStorage.getItem(HIST_KEY);
+      if (saved) chatHistory = JSON.parse(saved);
+    } catch(e) { chatHistory = []; }
+
     addBubble('assistant',
       'Hello! I\'m the NASS AI Assistant.\n\n' +
       'I have live access to the document tracker data. You can ask me things like:\n' +
@@ -105,6 +109,8 @@
   window._nassAiClear = function () {
     chatHistory = [];
     sugHidden   = false;
+    lastUserMsg = '';
+    localStorage.removeItem(HIST_KEY);
     var msgs = document.getElementById('ncp-msgs');
     if (msgs) msgs.innerHTML = '';
     var starters = document.getElementById('ncp-starters');
@@ -130,33 +136,42 @@
     window._nassAiSend();
   };
 
+  // ── Retry last failed message ────────────────────────────────────
+  window._nassAiRetry = function () {
+    if (!lastUserMsg || isStreaming) return;
+    var msgs = document.getElementById('ncp-msgs');
+    if (msgs && msgs.lastElementChild && msgs.lastElementChild.classList.contains('ncp-bubble-assistant')) {
+      msgs.lastElementChild.remove();
+    }
+    // Pop last user entry so it gets re-added cleanly by _nassAiSend
+    if (chatHistory.length && chatHistory[chatHistory.length - 1].role === 'user') {
+      chatHistory.pop();
+    }
+    document.getElementById('ncp-input').value = lastUserMsg;
+    window._nassAiSend();
+  };
+
   // ── Friendly error mapper ────────────────────────────────────────
   function friendlyErr(status, raw) {
     var s = (raw || '').toLowerCase();
-    // Credit / billing exhausted
     if (status === 529 || status === 402 ||
         s.indexOf('credit') !== -1 || s.indexOf('quota') !== -1 ||
         s.indexOf('billing') !== -1 || s.indexOf('insufficient') !== -1 ||
         s.indexOf('overloaded') !== -1 || s.indexOf('capacity') !== -1) {
       return 'Chat unavailable. Please try again later.';
     }
-    // Rate limited
     if (status === 429 || s.indexOf('rate limit') !== -1 || s.indexOf('too many') !== -1) {
       return 'Too many requests — please wait a moment and try again.';
     }
-    // Auth
     if (status === 401 || status === 403) {
       return 'Session expired. Please sign in again.';
     }
-    // Network / fetch failure
     if (status === 0 || s.indexOf('failed to fetch') !== -1 || s.indexOf('networkerror') !== -1) {
       return 'No connection. Check your internet and try again.';
     }
-    // Server error
     if (status >= 500) {
       return 'Chat unavailable. Please try again later.';
     }
-    // Fallback — return the raw message but trimmed
     return raw || 'Something went wrong. Please try again.';
   }
 
@@ -167,10 +182,10 @@
     var text  = (input.value || '').trim();
     if (!text) return;
 
+    lastUserMsg = text;
     input.value = '';
     input.style.height = 'auto';
 
-    // Hide starters on first real message
     if (!sugHidden) {
       sugHidden = true;
       var st = document.getElementById('ncp-starters');
@@ -181,9 +196,8 @@
     chatHistory.push({ role: 'user', content: text });
     if (chatHistory.length > MAX_HIST) chatHistory = chatHistory.slice(-MAX_HIST);
 
-    // Assistant bubble with typing indicator
-    var assistantDiv  = addBubble('assistant', '');
-    var innerDiv      = assistantDiv.querySelector('.ncp-bubble-content');
+    var assistantDiv = addBubble('assistant', '');
+    var innerDiv     = assistantDiv.querySelector('.ncp-bubble-content');
     innerDiv.innerHTML = '<span class="ncp-typing-dots"><span></span><span></span><span></span></span>';
 
     isStreaming = true;
@@ -192,7 +206,11 @@
     try {
       var session = (await window._sb.auth.getSession()).data.session;
       var token   = (session && session.access_token) ? session.access_token : '';
-      var curRows = JSON.parse(localStorage.getItem('nassRows') || '[]');
+
+      // Trim payload: filter empty rows, cap at 500 most recent
+      var allRows = JSON.parse(localStorage.getItem('nassRows') || '[]');
+      var curRows = allRows.filter(function(r){ return Array.isArray(r) && r[1]; });
+      if (curRows.length > 500) curRows = curRows.slice(-500);
 
       var resp = await fetch(EDGE_URL, {
         method:  'POST',
@@ -209,13 +227,14 @@
       if (!resp.ok) {
         var errText = await resp.text();
         try { errText = JSON.parse(errText).error || errText; } catch (e2) { /* raw text ok */ }
-        innerDiv.innerHTML = '<span class="ncp-err">&#9888; ' + escHtml(friendlyErr(resp.status, errText)) + '</span>';
+        innerDiv.innerHTML =
+          '<span class="ncp-err">&#9888; ' + escHtml(friendlyErr(resp.status, errText)) + '</span>' +
+          '<button class="ncp-retry-btn" onclick="window._nassAiRetry()">&#8635; Retry</button>';
         return;
       }
 
-      // Stream SSE response
-      var reader  = resp.body.getReader();
-      var decoder = new TextDecoder();
+      var reader   = resp.body.getReader();
+      var decoder  = new TextDecoder();
       var fullText = '';
       innerDiv.innerHTML = '';
 
@@ -243,12 +262,15 @@
 
       if (fullText) {
         chatHistory.push({ role: 'assistant', content: fullText });
+        try { localStorage.setItem(HIST_KEY, JSON.stringify(chatHistory)); } catch(e) {}
       } else if (!innerDiv.innerHTML) {
         innerDiv.innerHTML = '<em style="color:#9aa3b0">No response received.</em>';
       }
 
     } catch (err) {
-      innerDiv.innerHTML = '<span class="ncp-err">&#9888; ' + escHtml(friendlyErr(0, err.message)) + '</span>';
+      innerDiv.innerHTML =
+        '<span class="ncp-err">&#9888; ' + escHtml(friendlyErr(0, err.message)) + '</span>' +
+        '<button class="ncp-retry-btn" onclick="window._nassAiRetry()">&#8635; Retry</button>';
     } finally {
       isStreaming = false;
       setSending(false);
@@ -260,14 +282,15 @@
     var msgs = document.getElementById('ncp-msgs');
     var wrap = document.createElement('div');
     wrap.className = 'ncp-bubble ncp-bubble-' + role;
+    var ts = '<span class="ncp-ts">' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + '</span>';
 
     if (role === 'user') {
       wrap.innerHTML =
-        '<div class="ncp-bubble-label">You</div>' +
+        '<div class="ncp-bubble-label">You ' + ts + '</div>' +
         '<div class="ncp-bubble-content">' + escHtml(text) + '</div>';
     } else {
       wrap.innerHTML =
-        '<div class="ncp-bubble-label">&#129302; NASS AI</div>' +
+        '<div class="ncp-bubble-label">&#129302; NASS AI ' + ts + '</div>' +
         '<div class="ncp-bubble-content">' + mdToHtml(text) + '</div>';
     }
 
@@ -305,17 +328,23 @@
       .replace(/"/g, '&quot;');
   }
 
-  // Minimal Markdown renderer: bold, italic, inline code, newlines, bullets
+  // Markdown renderer: headings, bold, italic, code, numbered + bullet lists, newlines
   function mdToHtml(text) {
     if (!text) return '';
     var s = escHtml(text);
+    // Headings
+    s = s.replace(/(^|\n)### (.+)/g, '$1<strong class="ncp-h3">$2</strong>');
+    s = s.replace(/(^|\n)## (.+)/g,  '$1<strong class="ncp-h2">$2</strong>');
+    s = s.replace(/(^|\n)# (.+)/g,   '$1<strong class="ncp-h1">$2</strong>');
     // Bold
     s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     // Italic
     s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
     // Inline code
     s = s.replace(/`([^`]+)`/g, '<code class="ncp-code">$1</code>');
-    // Bullet lines (• or - or *)
+    // Numbered lists
+    s = s.replace(/(^|\n)(\d+)\. (.+)/g, '$1<span class="ncp-li">$2. $3</span>');
+    // Bullet lines (• - *)
     s = s.replace(/(^|\n)([•\-\*]) (.+)/g, '$1<span class="ncp-li">$2 $3</span>');
     // Newlines → <br>
     s = s.replace(/\n/g, '<br>');
@@ -329,7 +358,6 @@
     buildUI();
   }
 
-  // Exposed so the lazy-loader can open the panel right after script loads
   window._nassAiOpen = function () {
     var panel = document.getElementById('ncp-panel');
     if (panel && !panel.classList.contains('ncp-open')) togglePanel();
