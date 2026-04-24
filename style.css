@@ -331,7 +331,13 @@ th{position:relative}
 .ncp-bubble-assistant .ncp-bubble-content{background:#f0f4fb;border:1px solid #dce3f0;border-radius:10px 10px 10px 2px}
 .ncp-code{background:#e8edf5;border:1px solid #c8d0e0;border-radius:3px;padding:1px 5px;font-family:var(--font-mono);font-size:11.5px;color:#1a3060}
 .ncp-li{display:block;padding-left:8px}
+.ncp-h1{display:block;font-size:13.5px;margin:4px 0 2px}
+.ncp-h2{display:block;font-size:13px;margin:3px 0 2px}
+.ncp-h3{display:block;font-size:12.5px;margin:2px 0 1px}
+.ncp-ts{font-size:9.5px;font-weight:400;opacity:0.55;margin-left:6px;letter-spacing:0}
 .ncp-err{color:var(--signal-danger);font-size:12px}
+.ncp-retry-btn{display:inline-block;margin-top:6px;padding:4px 10px;font-size:11.5px;font-weight:600;font-family:var(--font-sans);background:#f0f4fb;border:1px solid #c8d0e0;border-radius:var(--radius-pill);color:var(--nass-navy-700);cursor:pointer;transition:background var(--ease-std)}
+.ncp-retry-btn:hover{background:var(--bg-subject-hover);border-color:#7aacdd}
 
 /* Typing animation */
 .ncp-typing-dots{display:inline-flex;align-items:center;gap:4px;padding:4px 2px}
@@ -1025,6 +1031,9 @@ body.ms-docked #view-users{margin-right:var(--ms-dock-w);transition:margin-right
 .ms-mine .ms-bbl{background:var(--nass-navy-700);color:#fff;border-radius:14px 14px 3px 14px;border-color:transparent;box-shadow:0 1px 4px rgba(0,38,85,0.25)}
 .ms-ai .ms-bbl{background:#f3edff;border-color:#c8a0f8;color:#3a1c6e}
 .ms-bbl-ts{font-size:10px;color:var(--fg-faint);padding:0 5px}
+.ms-ts-pending{color:var(--fg-faint);font-style:italic}
+.ms-optimistic{opacity:0.72}
+.ms-typing-bar{min-height:16px;font-size:10.5px;color:var(--fg-muted);font-style:italic;padding:2px 14px 0;flex-shrink:0}
 .ms-mention{color:var(--nass-navy-600);font-weight:700;background:rgba(0,51,102,0.08);border-radius:3px;padding:0 2px}
 .ms-mine .ms-mention{color:#ffd966;background:rgba(255,217,102,0.15)}
 
