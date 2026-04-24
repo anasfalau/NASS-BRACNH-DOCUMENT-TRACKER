@@ -166,7 +166,7 @@ async function loadInbox(){
     var seenRes=await window._sb.from('nass_inbox_seen').select('last_seen_at').eq('user_id',(window.userSession&&window.userSession.user&&window.userSession.user.id)||'').maybeSingle();
     _inboxLastSeen=seenRes.data?new Date(seenRes.data.last_seen_at):new Date(0);
     // Fetch assigned records from Supabase
-    var rRes=await window._sb.from('nass_records').select('*').in('action_officer',myOfficers).order('updated_at',{ascending:false}).limit(100);
+    var rRes=await window._sb.from('nass_records').select('*').in('officer',myOfficers).order('updated_at',{ascending:false}).limit(100);
     if(rRes.error)throw rRes.error;
     var docs=rRes.data||[];
     if(!docs.length){
@@ -179,7 +179,7 @@ async function loadInbox(){
     el.innerHTML='';
     docs.forEach(function(d){
       var isNew=new Date(d.updated_at||d.created_at)>_inboxLastSeen;
-      var fl=d.flag||'';
+      var fl=d.delay_flag||'';
       var div=document.createElement('div');
       div.className='inbox-item'+(isNew?' inbox-item-new':'');
       var statusCls=d.status==='Active'?'ds-active':d.status==='Completed'?'ds-completed':d.status==='On Hold'?'ds-hold':d.status==='Cancelled'?'ds-cancelled':d.status==='Filed'?'ds-filed':'';
@@ -235,7 +235,7 @@ async function checkInboxUnread(){
     var myOfficers=mRes.data.map(function(m){return m.officer_name;});
     var seenRes=await window._sb.from('nass_inbox_seen').select('last_seen_at').eq('user_id',uid).maybeSingle();
     var lastSeen=seenRes.data?new Date(seenRes.data.last_seen_at):new Date(0);
-    var rRes=await window._sb.from('nass_records').select('id,updated_at,created_at').in('action_officer',myOfficers).gt('updated_at',lastSeen.toISOString());
+    var rRes=await window._sb.from('nass_records').select('id,updated_at,created_at').in('officer',myOfficers).gt('updated_at',lastSeen.toISOString());
     var count=(rRes.data||[]).length;
     updateInboxBadge(count);
     var tbi=document.getElementById('tb-inbox');
