@@ -218,16 +218,29 @@ if ('serviceWorker' in navigator) {
 <!-- ═══════════════════════════════════════════════════════════════
      INBOX VIEW
      ═══════════════════════════════════════════════════════════════ -->
-<div id="view-inbox" style="display:none;background:var(--bg-app);min-height:calc(100vh - 56px);padding:28px 20px">
-  <div class="inbox-wrap">
-    <div class="inbox-hdr">
-      <div>
-        <h2 class="inbox-title">&#128274; My Inbox</h2>
-        <div class="inbox-sub" id="inbox-sub">Documents assigned to you for action</div>
+<div id="view-inbox" style="display:none">
+  <div class="gm-shell">
+    <!-- Sidebar -->
+    <div class="gm-side">
+      <div class="gm-side-lbl gm-side-active">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+        Inbox
+        <span class="gm-side-ct" id="gm-unread-ct" style="display:none"></span>
       </div>
-      <button class="btn btn-ghost" onclick="loadInbox()" title="Refresh inbox">&#8635; Refresh</button>
     </div>
-    <div id="inbox-list"><div class="inbox-empty">Loading&#8230;</div></div>
+    <!-- Main -->
+    <div class="gm-body">
+      <div class="gm-toolbar" id="gm-toolbar">
+        <label class="gm-chk-wrap" title="Select all"><input type="checkbox" id="gm-sel-all" onchange="window._gmSelAll(this.checked)"></label>
+        <button class="gm-icon-btn" title="Refresh" onclick="loadInbox()">&#8635;</button>
+        <div style="flex:1"></div>
+        <span class="gm-pg-info" id="gm-pg-info"></span>
+        <button class="gm-pg-btn" id="gm-prev-btn" onclick="window._gmPrev()" disabled title="Older">&#8249;</button>
+        <button class="gm-pg-btn" id="gm-next-btn" onclick="window._gmNext()" disabled title="Newer">&#8250;</button>
+      </div>
+      <div class="gm-sub-bar" id="inbox-sub"></div>
+      <div id="inbox-list"><div class="gm-loading">Loading&#8230;</div></div>
+    </div>
   </div>
 </div>
 

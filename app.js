@@ -146,73 +146,102 @@ async function loadRecordHistory(ri){
 function exportCSV(){var h=['#','Serial','File Ref No.','Subject','Current Location','Action Officer','Last Action','Date Received','Date Moved','SLA (Days)','Due Date','Status','Delay Flag','Remarks'];var _exp=getFiltered();var lines=[h.join(',')];_exp.forEach(function(r,i){lines.push([i+1].concat(r.map(function(v){return '"'+(v||'').replace(/"/g,"''")+'"';})).join(','));});var csv='\uFEFF'+lines.join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='NASS_Branch_WorkflowTracker_2026.csv';a.click();}
 
 // ── Inbox ──────────────────────────────────────────────────────────
-var _inboxLastSeen=null;
+var _inboxLastSeen=null,_inboxDocs=[],_inboxPage=0,_inboxPPG=10;
 async function loadInbox(){
   var el=document.getElementById('inbox-list');
   var sub=document.getElementById('inbox-sub');
   if(!el)return;
-  el.innerHTML='<div class="inbox-empty">Loading…</div>';
+  el.innerHTML='<div class="gm-loading">Loading…</div>';
   try{
-    // Get this user's mapped officer name(s)
-    var mRes=await window._sb.from('nass_officer_mappings').select('officer_name').eq('user_id',(window.userSession&&window.userSession.user&&window.userSession.user.id)||'');
+    var uid=(window.userSession&&window.userSession.user&&window.userSession.user.id)||'';
+    var mRes=await window._sb.from('nass_officer_mappings').select('officer_name').eq('user_id',uid);
     if(mRes.error)throw mRes.error;
     var myOfficers=(mRes.data||[]).map(function(m){return m.officer_name;});
     if(!myOfficers.length){
-      el.innerHTML='<div class="inbox-empty">&#128274; No officer mapping found.<br><span style="font-size:11px;color:var(--fg-faint)">Ask your admin to map your account to an officer name.</span></div>';
+      el.innerHTML='<div class="gm-empty">No officer mapping found.<br><small>Ask your admin to map your account to an officer name.</small></div>';
       if(sub)sub.textContent='No officer assigned to your account';
-      return;
+      _gmUpdateToolbar(0,0);return;
     }
-    // Get last-seen timestamp
-    var seenRes=await window._sb.from('nass_inbox_seen').select('last_seen_at').eq('user_id',(window.userSession&&window.userSession.user&&window.userSession.user.id)||'').maybeSingle();
+    var seenRes=await window._sb.from('nass_inbox_seen').select('last_seen_at').eq('user_id',uid).maybeSingle();
     _inboxLastSeen=seenRes.data?new Date(seenRes.data.last_seen_at):new Date(0);
-    // Fetch assigned records from Supabase
-    var rRes=await window._sb.from('nass_records').select('*').in('officer',myOfficers).order('updated_at',{ascending:false}).limit(100);
+    var rRes=await window._sb.from('nass_records').select('*').in('officer',myOfficers).order('updated_at',{ascending:false}).limit(200);
     if(rRes.error)throw rRes.error;
-    var docs=rRes.data||[];
-    if(!docs.length){
-      el.innerHTML='<div class="inbox-empty">&#9989; No documents assigned to you.</div>';
+    _inboxDocs=rRes.data||[];
+    _inboxPage=0;
+    if(!_inboxDocs.length){
+      el.innerHTML='<div class="gm-empty">No documents assigned to you.</div>';
       if(sub)sub.textContent='Officer: '+myOfficers.join(', ');
-      return;
+      _gmUpdateToolbar(0,0);return;
     }
-    var unread=docs.filter(function(d){return new Date(d.updated_at||d.created_at)>_inboxLastSeen;}).length;
-    if(sub)sub.textContent='Officer: '+myOfficers.join(', ')+' · '+docs.length+' document'+(docs.length===1?'':'s')+(unread?' · '+unread+' new':'');
-    el.innerHTML='';
-    docs.forEach(function(d){
-      var isNew=new Date(d.updated_at||d.created_at)>_inboxLastSeen;
-      var fl=d.delay_flag||'';
-      var div=document.createElement('div');
-      div.className='inbox-item'+(isNew?' inbox-item-new':'');
-      var statusCls=d.status==='Active'?'ds-active':d.status==='Completed'?'ds-completed':d.status==='On Hold'?'ds-hold':d.status==='Cancelled'?'ds-cancelled':d.status==='Filed'?'ds-filed':'';
-      var flagBadge=fl==='OVERDUE'?'<span class="inbox-flag flag-overdue">OVERDUE</span>':fl==='ON TIME'?'<span class="inbox-flag flag-ontime">ON TIME</span>':'';
-      div.innerHTML=
-        (isNew?'<span class="inbox-dot"></span>':'')+
-        '<div class="inbox-body">'+
-          '<div class="inbox-ref">'+_esc(d.file_ref||'—')+'</div>'+
-          '<div class="inbox-subj">'+_esc((d.subject||'').substring(0,120))+'</div>'+
-          '<div class="inbox-meta">'+
-            '<span class="detail-status '+statusCls+'">'+_esc(d.status||'')+'</span>'+
-            flagBadge+
-            '<span class="inbox-date">'+(d.updated_at?new Date(d.updated_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'')+
-            '</span>'+
-          '</div>'+
-        '</div>'+
-        '<button class="inbox-open-btn" title="Open record">&#8594;</button>';
-      div.querySelector('.inbox-open-btn').addEventListener('click',function(){
-        // Find in local rows array and open detail
-        var idx=rows.findIndex(function(r){return (r[1]||'')===(d.file_ref||'');});
-        if(idx>=0){showView('tracker');openDetail(idx);}
-        else{showView('tracker');}
-      });
-      el.appendChild(div);
-    });
-    // Mark as seen
+    var unread=_inboxDocs.filter(function(d){return new Date(d.updated_at||d.created_at)>_inboxLastSeen;}).length;
+    if(sub)sub.textContent='Officer: '+myOfficers.join(', ');
+    var uct=document.getElementById('gm-unread-ct');
+    if(uct){uct.textContent=unread?String(unread):'';uct.style.display=unread?'':'none';}
+    _renderInboxPage();
     markInboxSeen();
     updateInboxBadge(0);
   }catch(e){
     console.error('[Inbox]',e);
-    el.innerHTML='<div class="inbox-empty">&#9888; Could not load inbox. Check connection.</div>';
+    el.innerHTML='<div class="gm-empty">Could not load inbox. Check connection.</div>';
   }
 }
+function _renderInboxPage(){
+  var el=document.getElementById('inbox-list');
+  if(!el)return;
+  var total=_inboxDocs.length;
+  var start=_inboxPage*_inboxPPG;
+  var page=_inboxDocs.slice(start,start+_inboxPPG);
+  _gmUpdateToolbar(start,total);
+  el.innerHTML='';
+  var tbl=document.createElement('table');
+  tbl.className='gm-tbl';
+  page.forEach(function(d){
+    var isNew=new Date(d.updated_at||d.created_at)>_inboxLastSeen;
+    var fl=d.delay_flag||'';
+    var statusCls=d.status==='Active'?'ds-active':d.status==='Completed'?'ds-completed':d.status==='On Hold'?'ds-hold':d.status==='Cancelled'?'ds-cancelled':d.status==='Filed'?'ds-filed':'';
+    var flagCls=fl==='OVERDUE'?'flag-overdue':fl==='ON TIME'?'flag-ontime':'';
+    var dt=new Date(d.updated_at||d.created_at||0);
+    var now=new Date();
+    var sameDay=dt.getFullYear()===now.getFullYear()&&dt.getMonth()===now.getMonth()&&dt.getDate()===now.getDate();
+    var dateStr=sameDay?dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+    var tr=document.createElement('tr');
+    tr.className='gm-row'+(isNew?' gm-unread':'');
+    tr.innerHTML=
+      '<td class="gm-td-chk"><input type="checkbox" class="gm-row-chk" onclick="event.stopPropagation();this.closest(\'tr\').classList.toggle(\'gm-selected\',this.checked)"></td>'+
+      '<td class="gm-td-dot">'+(isNew?'<span class="gm-dot"></span>':'')+'</td>'+
+      '<td class="gm-td-from">'+_esc(d.officer||'\u2014')+'</td>'+
+      '<td class="gm-td-subj">'+
+        '<span class="gm-subj-main">'+_esc((d.subject||'').substring(0,90))+'</span>'+
+        '<span class="gm-subj-ref"> \u2014 '+_esc(d.file_ref||'')+'</span>'+
+      '</td>'+
+      '<td class="gm-td-badges">'+
+        (d.status?'<span class="detail-status '+statusCls+'">'+_esc(d.status)+'</span>':'')+
+        (fl&&flagCls?'<span class="inbox-flag '+flagCls+'">'+_esc(fl)+'</span>':'')+
+      '</td>'+
+      '<td class="gm-td-date">'+_esc(dateStr)+'</td>';
+    tr.addEventListener('click',function(e){
+      if(e.target.type==='checkbox')return;
+      var idx=rows.findIndex(function(r){return (r[1]||'')===(d.file_ref||'');});
+      if(idx>=0){showView('tracker');openDetail(idx);}
+      else showView('tracker');
+    });
+    tbl.appendChild(tr);
+  });
+  el.appendChild(tbl);
+}
+function _gmUpdateToolbar(start,total){
+  var info=document.getElementById('gm-pg-info');
+  var prev=document.getElementById('gm-prev-btn');
+  var next=document.getElementById('gm-next-btn');
+  var sa=document.getElementById('gm-sel-all');
+  if(info)info.textContent=total?(start+1)+'\u2013'+Math.min(start+_inboxPPG,total)+' of '+total:'No messages';
+  if(prev)prev.disabled=_inboxPage===0;
+  if(next)next.disabled=(start+_inboxPPG)>=total;
+  if(sa)sa.checked=false;
+}
+window._gmSelAll=function(checked){document.querySelectorAll('.gm-row-chk').forEach(function(c){c.checked=checked;c.closest('tr').classList.toggle('gm-selected',checked);});};
+window._gmPrev=function(){if(_inboxPage>0){_inboxPage--;_renderInboxPage();}};
+window._gmNext=function(){if((_inboxPage+1)*_inboxPPG<_inboxDocs.length){_inboxPage++;_renderInboxPage();}};
 async function markInboxSeen(){
   try{
     var uid=(window.userSession&&window.userSession.user&&window.userSession.user.id)||'';
