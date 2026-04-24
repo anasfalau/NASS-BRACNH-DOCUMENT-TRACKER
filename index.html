@@ -17,7 +17,7 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-<script>if(localStorage.getItem('nassDark')==='1')document.body.classList.add('dark');</script>
+<script>if(localStorage.getItem('nassDark')==='1'){document.body.classList.add('dark');document.documentElement.setAttribute('data-theme','dark');}</script>
 <!-- Offline banner -->
 <div id="offline-banner" style="display:none">
   <span>&#128268; You&#39;re offline &mdash; showing cached data. Changes will sync when reconnected.</span>
