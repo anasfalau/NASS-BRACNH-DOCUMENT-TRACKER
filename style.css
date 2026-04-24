@@ -1155,3 +1155,42 @@ body.dark .ms-thread-empty{color:#526a88!important}
   .ms-msg{max-width:88%}
   #ncp-fab{bottom:16px;right:16px;width:50px;height:50px}
 }
+
+/* ── Toast notifications ──────────────────────────────────────── */
+#toast-root{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.toast{padding:10px 18px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:600;font-family:var(--font-sans);color:#fff;box-shadow:0 4px 18px rgba(0,0,0,0.22);opacity:0;transform:translateY(12px);transition:opacity 0.22s ease,transform 0.22s ease;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 48px)}
+.toast.toast-in{opacity:1;transform:translateY(0)}
+.toast.toast-out{opacity:0;transform:translateY(12px)}
+.toast-success{background:var(--nass-navy-700)}
+.toast-error{background:var(--signal-danger)}
+.toast-warn{background:#b07000}
+.toast-info{background:var(--nass-navy-500)}
+
+/* ── Inbox ────────────────────────────────────────────────────── */
+.inbox-wrap{max-width:780px;margin:0 auto}
+.inbox-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px}
+.inbox-title{font-size:18px;font-weight:700;color:var(--fg-ink);margin:0 0 4px}
+.inbox-sub{font-size:12px;color:var(--fg-subtle)}
+.inbox-empty{text-align:center;padding:48px 20px;color:var(--fg-subtle);font-size:13px;line-height:1.7}
+.inbox-item{display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border-soft);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;cursor:default;transition:box-shadow var(--ease-std),border-color var(--ease-std);position:relative}
+.inbox-item:hover{box-shadow:0 2px 12px rgba(0,38,85,0.10);border-color:var(--border-default)}
+.inbox-item-new{border-left:3px solid var(--nass-navy-500)}
+.inbox-dot{width:8px;height:8px;border-radius:50%;background:var(--nass-navy-500);flex-shrink:0}
+.inbox-body{flex:1;min-width:0}
+.inbox-ref{font-size:11px;font-weight:700;color:var(--fg-muted);letter-spacing:0.04em;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inbox-subj{font-size:13px;font-weight:600;color:var(--fg-ink);line-height:1.4;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inbox-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.inbox-flag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:var(--radius-pill);letter-spacing:0.07em}
+.inbox-date{font-size:11px;color:var(--fg-faint);margin-left:auto}
+.inbox-open-btn{flex-shrink:0;width:32px;height:32px;border-radius:50%;border:1px solid var(--border-default);background:var(--bg-subtle);color:var(--nass-navy-700);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background var(--ease-std)}
+.inbox-open-btn:hover{background:var(--nass-navy-700);color:#fff;border-color:var(--nass-navy-700)}
+
+/* ── Officer Mapping table ───────────────────────────────────── */
+.acard-wide{grid-column:1/-1}
+.map-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.map-tbl th{text-align:left;padding:8px 10px;font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--fg-subtle);border-bottom:2px solid var(--border-soft)}
+.map-tbl td{padding:8px 10px;border-bottom:1px solid var(--border-divider);vertical-align:middle}
+.map-off{font-weight:600;color:var(--fg-ink);white-space:nowrap}
+.map-sel{width:100%;padding:5px 8px;border:1px solid var(--border-default);border-radius:var(--radius-md);font-size:12px;font-family:var(--font-sans);color:var(--fg-ink);background:var(--bg-input)}
+.btn-map-clear{background:none;border:none;color:var(--fg-faint);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:var(--radius-md);transition:color var(--ease-std)}
+.btn-map-clear:hover{color:var(--signal-danger)}

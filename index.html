@@ -141,6 +141,7 @@ if ('serviceWorker' in navigator) {
   <div class="sp"></div>
   <div class="tabs">
     <button class="tab on" id="tb-tracker"   onclick="showView('tracker')">Tracker</button>
+    <button class="tab"    id="tb-inbox"     onclick="showView('inbox')" style="display:none">&#128274; Inbox<span id="inbox-badge" class="tab-badge" style="display:none"></span></button>
     <button class="tab"    id="tb-dashboard" onclick="showView('dashboard')">&#128200; Dashboard</button>
     <button class="tab"    id="tb-admin"     onclick="showView('admin')">Admin Panel</button>
     <button class="tab"    id="tb-users"     onclick="showView('users')" style="display:none">Users</button>
@@ -215,6 +216,22 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════
+     INBOX VIEW
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="view-inbox" style="display:none;background:var(--bg-app);min-height:calc(100vh - 56px);padding:28px 20px">
+  <div class="inbox-wrap">
+    <div class="inbox-hdr">
+      <div>
+        <h2 class="inbox-title">&#128274; My Inbox</h2>
+        <div class="inbox-sub" id="inbox-sub">Documents assigned to you for action</div>
+      </div>
+      <button class="btn btn-ghost" onclick="loadInbox()" title="Refresh inbox">&#8635; Refresh</button>
+    </div>
+    <div id="inbox-list"><div class="inbox-empty">Loading&#8230;</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
      DASHBOARD VIEW
      ═══════════════════════════════════════════════════════════════ -->
 <div id="view-dashboard" style="display:none">
@@ -245,6 +262,12 @@ if ('serviceWorker' in navigator) {
     <div class="acard"><h3>Status Options <button class="btn btn-navy" style="font-size:11px;padding:3px 9px" onclick="showAI('statuses')">+ Add</button></h3><div class="tags" id="at-statuses"></div><div class="ai" id="ai-statuses" style="display:none"><input type="text" id="av-statuses" placeholder="New status..."><button onclick="saveAI('statuses')">Save</button><button onclick="hideAI('statuses')" style="background:#888">Cancel</button></div></div>
     <div class="acard"><h3>Location Options <button class="btn btn-navy" style="font-size:11px;padding:3px 9px" onclick="showAI('locations')">+ Add</button></h3><div class="tags" id="at-locations"></div><div class="ai" id="ai-locations" style="display:none"><input type="text" id="av-locations" placeholder="New location..."><button onclick="saveAI('locations')">Save</button><button onclick="hideAI('locations')" style="background:#888">Cancel</button></div></div>
     <div class="acard"><h3>Last Action Options <button class="btn btn-navy" style="font-size:11px;padding:3px 9px" onclick="showAI('actions')">+ Add</button></h3><div class="tags" id="at-actions"></div><div class="ai" id="ai-actions" style="display:none"><input type="text" id="av-actions" placeholder="New action value..."><button onclick="saveAI('actions')">Save</button><button onclick="hideAI('actions')" style="background:#888">Cancel</button></div></div>
+    <div class="acard acard-wide" id="acard-mappings">
+      <h3>&#128274; Officer → User Inbox Mapping
+        <span style="font-size:11px;font-weight:400;color:var(--fg-subtle);margin-left:8px">Link officer names to user accounts so documents appear in their inbox</span>
+      </h3>
+      <div id="mapping-list" style="margin-top:12px"><div style="color:var(--fg-subtle);font-size:12px">Loading…</div></div>
+    </div>
   </div>
 </div>
 
@@ -680,5 +703,6 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 <script src="supabase-init.js"></script>
+<div id="toast-root"></div>
 </body>
 </html>
