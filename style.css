@@ -796,20 +796,20 @@ body.dark{
 body.dark td{background:#14202e!important;color:#f0f4ff!important;border-bottom-color:#2e4464!important;border-right-color:#263c58!important}
 body.dark tr:nth-child(even) td{background:#182030!important}
 body.dark tr:hover td{background:#1f3d60!important}
-/* ── Status rows — gradient wash from edge, left border + glow ── */
-body.dark .s-active td{background:linear-gradient(90deg,rgba(74,158,255,0.07) 0%,transparent 50%)!important;color:#eaf0fa!important}
-body.dark .s-completed td{background:linear-gradient(90deg,rgba(61,220,151,0.07) 0%,transparent 50%)!important;color:#eaf0fa!important}
-body.dark .s-hold td{background:linear-gradient(90deg,rgba(230,197,58,0.08) 0%,transparent 50%)!important;color:#eaf0fa!important}
-body.dark .s-cancelled td{background:linear-gradient(90deg,rgba(255,90,108,0.07) 0%,transparent 50%)!important;color:#eaf0fa!important}
-body.dark .s-filed td{background:linear-gradient(90deg,rgba(178,140,255,0.07) 0%,transparent 50%)!important;color:#eaf0fa!important}
-body.dark .row-overdue td{background:linear-gradient(90deg,rgba(255,90,108,0.10) 0%,transparent 50%)!important;color:#eaf0fa!important}
-/* Left-edge glow on first cell */
-body.dark .s-active td:first-child{box-shadow:inset 3px 0 0 #4a9eff,inset 4px 0 8px rgba(74,158,255,0.3)!important}
-body.dark .s-completed td:first-child{box-shadow:inset 3px 0 0 #3ddc97,inset 4px 0 8px rgba(61,220,151,0.3)!important}
-body.dark .s-hold td:first-child{box-shadow:inset 3px 0 0 #e6c53a,inset 4px 0 8px rgba(230,197,58,0.3)!important}
-body.dark .s-cancelled td:first-child{box-shadow:inset 3px 0 0 #ff5a6c,inset 4px 0 8px rgba(255,90,108,0.3)!important}
-body.dark .s-filed td:first-child{box-shadow:inset 3px 0 0 #b28cff,inset 4px 0 8px rgba(178,140,255,0.3)!important}
-body.dark .row-overdue td:first-child{box-shadow:inset 3px 0 0 #ff5a6c,inset 4px 0 8px rgba(255,90,108,0.35)!important}
+/* ── Status rows — solid colored fills mirroring light mode, dark-adapted ── */
+body.dark .s-active td{background:#0e2a50!important;color:#eaf0fa!important;border-left:3px solid #4a9eff}
+body.dark .s-completed td{background:#0c3020!important;color:#eaf0fa!important;border-left:3px solid #3ddc97}
+body.dark .s-hold td{background:#2a2008!important;color:#eaf0fa!important;border-left:3px solid #e6c53a}
+body.dark .s-cancelled td{background:#280e18!important;color:#eaf0fa!important;border-left:3px solid #ff5a6c}
+body.dark .s-filed td{background:#1c1038!important;color:#eaf0fa!important;border-left:3px solid #b28cff}
+body.dark .row-overdue td{background:#2e0c14!important;color:#eaf0fa!important;border-left:3px solid #ff5a6c}
+/* Glow on left border cell */
+body.dark .s-active td:first-child{box-shadow:inset 3px 0 0 #4a9eff,inset 0 0 10px rgba(74,158,255,0.2)!important}
+body.dark .s-completed td:first-child{box-shadow:inset 3px 0 0 #3ddc97,inset 0 0 10px rgba(61,220,151,0.2)!important}
+body.dark .s-hold td:first-child{box-shadow:inset 3px 0 0 #e6c53a,inset 0 0 10px rgba(230,197,58,0.2)!important}
+body.dark .s-cancelled td:first-child{box-shadow:inset 3px 0 0 #ff5a6c,inset 0 0 10px rgba(255,90,108,0.2)!important}
+body.dark .s-filed td:first-child{box-shadow:inset 3px 0 0 #b28cff,inset 0 0 10px rgba(178,140,255,0.2)!important}
+body.dark .row-overdue td:first-child{box-shadow:inset 3px 0 0 #ff5a6c,inset 0 0 10px rgba(255,90,108,0.25)!important}
 /* Hover */
 body.dark tr:hover.s-active td,body.dark tr:hover.s-completed td,body.dark tr:hover.s-hold td,body.dark tr:hover.s-cancelled td,body.dark tr:hover.s-filed td,body.dark tr:hover.row-overdue td{background:#17305a!important}
 /* ── Countdown / delay badges — vivid ── */
@@ -841,8 +841,15 @@ body.dark .sl{color:#7a88a3!important}
 /* ── Cards and modals ── */
 body.dark .acard{background:#14202e!important;border-color:#3a5070!important}
 body.dark .acard h3{color:#82bcff!important;border-color:#1c2e44!important}
-body.dark .mbox,body.dark .detail-mbox,body.dark .detail-left{background:#14202e!important}
-body.dark .mbox h3{color:#82bcff!important}
+body.dark .mbox,body.dark .detail-mbox{background:#0b1a30!important;border:1px solid #1a2b4a}
+body.dark .detail-left{background:#0b1a30!important;border-right-color:#162640!important}
+body.dark .detail-right{background:#08152a!important}
+body.dark .mbox h3{color:#7aa3d9!important;border-bottom-color:#162640!important}
+body.dark #d-pdf-title-bar{background:#0a1728!important;color:#c8d2e4!important;border-bottom-color:#1a2b4a!important}
+body.dark #d-pdf-loading{color:#7a88a3!important}
+body.dark .pdf-panel-header{background:#0c1e3a!important;border-bottom:1px solid rgba(230,197,58,0.15)!important}
+body.dark .pdf-rot-btn{background:rgba(234,240,250,0.08)!important;border-color:rgba(234,240,250,0.18)!important}
+body.dark .pdf-rot-btn:hover{background:rgba(234,240,250,0.2)!important}
 body.dark .mf label{color:#a0bad8!important}
 body.dark .mbg{background:rgba(0,6,16,0.92)!important}
 body.dark .mbr{border-color:#1c2e44!important}
@@ -910,10 +917,12 @@ body.dark .u-role-card{background:#1c2a3c!important}
 body.dark .rc{color:#a0bad8!important}
 body.dark .resizer{background:#3a5070!important}
 body.dark .tag{background:#1c3258!important;border-color:#2e4878!important;color:#82bcff!important}
-body.dark .detail-audit-label{color:#8aabcc!important}
-body.dark .detail-label{color:#8aabcc!important}
-body.dark .detail-value{color:#f0f4ff!important}
-body.dark .detail-ref{color:#82bcff!important}
+body.dark .detail-audit-label{color:#7a88a3!important}
+body.dark .detail-label{color:#7a88a3!important;letter-spacing:0.08em}
+body.dark .detail-value{color:#eaf0fa!important}
+body.dark .detail-ref{color:#e6c53a!important;text-shadow:0 0 16px rgba(230,197,58,0.25)!important}
+body.dark .detail-audit{border-top-color:#162640!important;color:#55637e!important}
+body.dark .detail-status{box-shadow:inset 0 0 0 1px currentColor!important;opacity:0.92}
 /* ── Inputs (all contexts) ── */
 body.dark input,body.dark select,body.dark textarea{background:#182434!important;color:#f0f4ff!important;border-color:#3a5070!important}
 body.dark .sbar input{background:#182434 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23526a88' stroke-width='2.2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") 10px center no-repeat!important}
