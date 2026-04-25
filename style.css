@@ -841,28 +841,29 @@ body.dark .sl{color:#7a88a3!important}
 /* ── Cards and modals ── */
 body.dark .acard{background:#14202e!important;border-color:#3a5070!important}
 body.dark .acard h3{color:#82bcff!important;border-color:#1c2e44!important}
-body.dark .mbox,body.dark .detail-mbox{background:#0b1a30!important;border:1px solid #1a2b4a}
-body.dark .detail-left{background:#0b1a30!important;border-right-color:#162640!important}
-body.dark .detail-right{background:#08152a!important}
-body.dark .mbox h3{color:#7aa3d9!important;border-bottom-color:#162640!important}
-body.dark #d-pdf-title-bar{background:#0a1728!important;color:#c8d2e4!important;border-bottom-color:#1a2b4a!important}
-body.dark #d-pdf-loading{color:#7a88a3!important}
-body.dark .pdf-panel-header{background:#0c1e3a!important;border-bottom:1px solid rgba(230,197,58,0.15)!important}
-body.dark .pdf-rot-btn{background:rgba(234,240,250,0.08)!important;border-color:rgba(234,240,250,0.18)!important}
-body.dark .pdf-rot-btn:hover{background:rgba(234,240,250,0.2)!important}
+/* Detail modal forced to daylight in dark mode */
+body.dark .mbox,body.dark .detail-mbox{background:#ffffff!important;border:none!important}
+body.dark .detail-left{background:#ffffff!important;border-right-color:#dce1ea!important}
+body.dark .detail-right{background:#f7f8fc!important}
+body.dark .mbox h3{color:#003366!important;border-bottom-color:#eef1f6!important}
+body.dark #d-pdf-title-bar{background:#eef1f6!important;color:#1a2332!important;border-bottom-color:#dce1ea!important}
+body.dark #d-pdf-loading{color:#6b7585!important}
+body.dark .pdf-panel-header{background:#1a3c6e!important;border-bottom:none!important}
+body.dark .pdf-rot-btn{background:rgba(255,255,255,0.12)!important;border-color:rgba(255,255,255,0.25)!important}
+body.dark .pdf-rot-btn:hover{background:rgba(255,255,255,0.28)!important}
 body.dark .mf label{color:#a0bad8!important}
 body.dark .mbg{background:rgba(0,6,16,0.92)!important}
-body.dark .mbr{border-color:#1c2e44!important}
-body.dark .mcancel{background:#1c2a3c!important;color:#ccd8ee!important;border-color:#3a5070!important}
-body.dark .medit{background:#1c2a3c!important;color:#82bcff!important;border-color:#3a5070!important}
+body.dark .mbr{border-color:#dce1ea!important}
+body.dark .mcancel{background:#f4f6fa!important;color:#3a4558!important;border-color:#c8cdd8!important}
+body.dark .medit{background:#f4f6fa!important;color:#003366!important;border-color:#c8cdd8!important}
 /* ── Change history ── */
-body.dark .dh-item{background:#182434!important;border-color:#2e4464!important}
-body.dark .dh-who{color:#82bcff!important}
-body.dark .dh-when{color:#a0bad8!important}
-body.dark .dh-old{color:#ff8080!important}
-body.dark .dh-new{color:#3ddd88!important}
-body.dark .dh-arr{color:#8aabcc!important}
-body.dark .dh-section-title{color:#a0bad8!important;border-color:#1c2e44!important}
+body.dark .dh-item{background:#f7f9fc!important;border-color:#dce1ea!important}
+body.dark .dh-who{color:#003366!important}
+body.dark .dh-when{color:#6b7585!important}
+body.dark .dh-old{color:#c0392b!important}
+body.dark .dh-new{color:#1a7a3c!important}
+body.dark .dh-arr{color:#6b7585!important}
+body.dark .dh-section-title{color:#5a6375!important;border-color:#eef1f6!important}
 /* ── Dashboard ── */
 body.dark .db-card,body.dark .db-tile{background:#14202e!important;border-color:#3a5070!important}
 body.dark .db-card-title{color:#a0bad8!important}
@@ -917,12 +918,12 @@ body.dark .u-role-card{background:#1c2a3c!important}
 body.dark .rc{color:#a0bad8!important}
 body.dark .resizer{background:#3a5070!important}
 body.dark .tag{background:#1c3258!important;border-color:#2e4878!important;color:#82bcff!important}
-body.dark .detail-audit-label{color:#7a88a3!important}
-body.dark .detail-label{color:#7a88a3!important;letter-spacing:0.08em}
-body.dark .detail-value{color:#eaf0fa!important}
-body.dark .detail-ref{color:#e6c53a!important;text-shadow:0 0 16px rgba(230,197,58,0.25)!important}
-body.dark .detail-audit{border-top-color:#162640!important;color:#55637e!important}
-body.dark .detail-status{box-shadow:inset 0 0 0 1px currentColor!important;opacity:0.92}
+body.dark .detail-audit-label{color:#6b7585!important}
+body.dark .detail-label{color:#6b7585!important}
+body.dark .detail-value{color:#1a2332!important}
+body.dark .detail-ref{color:#003366!important;text-shadow:none!important}
+body.dark .detail-audit{border-top-color:#eef1f6!important;color:#9aa3b0!important}
+body.dark .detail-status{box-shadow:none!important;opacity:1}
 /* ── Inputs (all contexts) ── */
 body.dark input,body.dark select,body.dark textarea{background:#182434!important;color:#f0f4ff!important;border-color:#3a5070!important}
 body.dark .sbar input{background:#182434 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23526a88' stroke-width='2.2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") 10px center no-repeat!important}
