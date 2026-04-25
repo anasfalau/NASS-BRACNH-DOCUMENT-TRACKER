@@ -146,7 +146,7 @@ async function loadRecordHistory(ri){
 function exportCSV(){var h=['#','Serial','File Ref No.','Subject','Current Location','Action Officer','Last Action','Date Received','Date Moved','SLA (Days)','Due Date','Status','Delay Flag','Remarks'];var _exp=getFiltered();var lines=[h.join(',')];_exp.forEach(function(r,i){lines.push([i+1].concat(r.map(function(v){return '"'+(v||'').replace(/"/g,"''")+'"';})).join(','));});var csv='\uFEFF'+lines.join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='NASS_Branch_WorkflowTracker_2026.csv';a.click();}
 
 // ── Inbox ──────────────────────────────────────────────────────────
-var _inboxLastSeen=null,_inboxDocs=[],_inboxPage=0,_inboxPPG=10;
+var _inboxLastSeen=null,_inboxDocs=[],_inboxPage=0,_inboxPPG=10,_inboxFilter=null;
 async function loadInbox(){
   var el=document.getElementById('inbox-list');
   var sub=document.getElementById('inbox-sub');
@@ -177,6 +177,8 @@ async function loadInbox(){
     if(sub)sub.textContent='Officer: '+myOfficers.join(', ');
     var uct=document.getElementById('gm-unread-ct');
     if(uct){uct.textContent=unread?String(unread):'';uct.style.display=unread?'':'none';}
+    _inboxFilter=null;
+    _gmUpdateSidebar();
     _renderInboxPage();
     markInboxSeen();
     updateInboxBadge(0);
@@ -185,12 +187,32 @@ async function loadInbox(){
     el.innerHTML='<div class="gm-empty">Could not load inbox. Check connection.</div>';
   }
 }
+function _gmGetFiltered(){
+  if(!_inboxFilter)return _inboxDocs;
+  if(_inboxFilter==='Unread')return _inboxDocs.filter(function(d){return new Date(d.updated_at||d.created_at)>_inboxLastSeen;});
+  if(_inboxFilter==='OVERDUE')return _inboxDocs.filter(function(d){return (d.delay_flag||'')==='OVERDUE';});
+  return _inboxDocs.filter(function(d){return d.status===_inboxFilter;});
+}
+function _gmUpdateSidebar(){
+  var statuses=['Active','Completed','On Hold','Cancelled','Filed','OVERDUE'];
+  statuses.forEach(function(st){
+    var el=document.getElementById('gm-ct-'+st);
+    if(!el)return;
+    var count=st==='OVERDUE'?_inboxDocs.filter(function(d){return (d.delay_flag||'')==='OVERDUE';}).length:_inboxDocs.filter(function(d){return d.status===st;}).length;
+    el.textContent=count?String(count):'';
+    el.style.display=count?'':'none';
+  });
+  var unreadEl=document.getElementById('gm-ct-Unread');
+  var unreadCt=_inboxDocs.filter(function(d){return new Date(d.updated_at||d.created_at)>_inboxLastSeen;}).length;
+  if(unreadEl){unreadEl.textContent=unreadCt?String(unreadCt):'';unreadEl.style.display=unreadCt?'':'none';}
+}
 function _renderInboxPage(){
   var el=document.getElementById('inbox-list');
   if(!el)return;
-  var total=_inboxDocs.length;
+  var filtered=_gmGetFiltered();
+  var total=filtered.length;
   var start=_inboxPage*_inboxPPG;
-  var page=_inboxDocs.slice(start,start+_inboxPPG);
+  var page=filtered.slice(start,start+_inboxPPG);
   _gmUpdateToolbar(start,total);
   el.innerHTML='';
   var tbl=document.createElement('table');
@@ -241,7 +263,8 @@ function _gmUpdateToolbar(start,total){
 }
 window._gmSelAll=function(checked){document.querySelectorAll('.gm-row-chk').forEach(function(c){c.checked=checked;c.closest('tr').classList.toggle('gm-selected',checked);});};
 window._gmPrev=function(){if(_inboxPage>0){_inboxPage--;_renderInboxPage();}};
-window._gmNext=function(){if((_inboxPage+1)*_inboxPPG<_inboxDocs.length){_inboxPage++;_renderInboxPage();}};
+window._gmNext=function(){if((_inboxPage+1)*_inboxPPG<_gmGetFiltered().length){_inboxPage++;_renderInboxPage();}};
+window._gmFilter=function(filter,el){_inboxFilter=filter;_inboxPage=0;document.querySelectorAll('.gm-side-lbl').forEach(function(l){l.classList.remove('gm-side-active');});if(el)el.classList.add('gm-side-active');_renderInboxPage();};
 async function markInboxSeen(){
   try{
     var uid=(window.userSession&&window.userSession.user&&window.userSession.user.id)||'';

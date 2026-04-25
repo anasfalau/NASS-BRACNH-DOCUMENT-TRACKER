@@ -1222,9 +1222,13 @@ body.dark .ms-thread-empty{color:#526a88!important}
 /* Shell: sidebar + main */
 .gm-shell{display:flex;min-height:calc(100vh - 56px);background:var(--bg-app)}
 .gm-side{width:200px;flex-shrink:0;padding:16px 8px;border-right:1px solid var(--border-soft)}
-.gm-side-lbl{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-xl);font-size:13px;font-weight:600;color:var(--fg-ink);cursor:default;white-space:nowrap;user-select:none}
-.gm-side-active{background:var(--nass-navy-50,#e8eef7);color:var(--nass-navy-700)}
-.gm-side-ct{margin-left:auto;background:var(--nass-navy-600);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;min-width:20px;text-align:center}
+.gm-side-lbl{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:var(--radius-xl);font-size:12.5px;font-weight:500;color:var(--fg-body);cursor:pointer;white-space:nowrap;user-select:none;transition:background var(--ease-std)}
+.gm-side-lbl:hover{background:var(--bg-muted)}
+.gm-side-active{background:var(--nass-navy-50,#e8eef7)!important;color:var(--nass-navy-700)!important;font-weight:700}
+.gm-side-ct{margin-left:auto;background:var(--nass-navy-600);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
+.gm-side-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.gm-side-divider{height:1px;background:var(--border-divider);margin:6px 12px}
+.gm-side-section{font-size:10px;font-weight:700;color:var(--fg-faint);letter-spacing:0.08em;text-transform:uppercase;padding:8px 14px 4px}
 /* Main column */
 .gm-body{flex:1;min-width:0;display:flex;flex-direction:column}
 /* Toolbar */
@@ -1265,7 +1269,11 @@ body.dark .ms-thread-empty{color:#526a88!important}
 /* Dark mode */
 body.dark .gm-shell{background:#0f1923}
 body.dark .gm-side{border-color:#1c2e44}
-body.dark .gm-side-active{background:#1a2d45;color:#82bcff}
+body.dark .gm-side-lbl{color:#96a3bc}
+body.dark .gm-side-lbl:hover{background:#0e1f3a!important}
+body.dark .gm-side-active{background:#1a2d45!important;color:#7aa3d9!important}
+body.dark .gm-side-section{color:#55637e}
+body.dark .gm-side-divider{background:#162640}
 body.dark .gm-toolbar,body.dark .gm-sub-bar{background:#14202e;border-color:#1c2e44}
 body.dark .gm-tbl{background:#14202e}
 body.dark .gm-unread{background:#192533}

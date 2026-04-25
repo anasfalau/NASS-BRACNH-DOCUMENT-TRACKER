@@ -222,10 +222,42 @@ if ('serviceWorker' in navigator) {
   <div class="gm-shell">
     <!-- Sidebar -->
     <div class="gm-side">
-      <div class="gm-side-lbl gm-side-active">
-        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
-        Inbox
+      <div class="gm-side-lbl gm-side-active" id="gm-filter-all" onclick="window._gmFilter(null,this)">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+        All Mail
         <span class="gm-side-ct" id="gm-unread-ct" style="display:none"></span>
+      </div>
+      <div class="gm-side-divider"></div>
+      <div class="gm-side-section">By Status</div>
+      <div class="gm-side-lbl" id="gm-filter-Active" onclick="window._gmFilter('Active',this)">
+        <span class="gm-side-dot" style="background:#0055aa"></span>Active
+        <span class="gm-side-ct" id="gm-ct-Active" style="display:none"></span>
+      </div>
+      <div class="gm-side-lbl" id="gm-filter-Completed" onclick="window._gmFilter('Completed',this)">
+        <span class="gm-side-dot" style="background:#0d6e35"></span>Completed
+        <span class="gm-side-ct" id="gm-ct-Completed" style="display:none"></span>
+      </div>
+      <div class="gm-side-lbl" id="gm-filter-On Hold" onclick="window._gmFilter('On Hold',this)">
+        <span class="gm-side-dot" style="background:#c8a400"></span>On Hold
+        <span class="gm-side-ct" id="gm-ct-On Hold" style="display:none"></span>
+      </div>
+      <div class="gm-side-lbl" id="gm-filter-Cancelled" onclick="window._gmFilter('Cancelled',this)">
+        <span class="gm-side-dot" style="background:#b81c2e"></span>Cancelled
+        <span class="gm-side-ct" id="gm-ct-Cancelled" style="display:none"></span>
+      </div>
+      <div class="gm-side-lbl" id="gm-filter-Filed" onclick="window._gmFilter('Filed',this)">
+        <span class="gm-side-dot" style="background:#5a2d9a"></span>Filed
+        <span class="gm-side-ct" id="gm-ct-Filed" style="display:none"></span>
+      </div>
+      <div class="gm-side-divider"></div>
+      <div class="gm-side-section">By Flag</div>
+      <div class="gm-side-lbl" id="gm-filter-OVERDUE" onclick="window._gmFilter('OVERDUE',this)">
+        <span class="gm-side-dot" style="background:#c0392b"></span>Overdue
+        <span class="gm-side-ct" id="gm-ct-OVERDUE" style="display:none"></span>
+      </div>
+      <div class="gm-side-lbl" id="gm-filter-Unread" onclick="window._gmFilter('Unread',this)">
+        <span class="gm-side-dot" style="background:#00509e"></span>Unread
+        <span class="gm-side-ct" id="gm-ct-Unread" style="display:none"></span>
       </div>
     </div>
     <!-- Main -->
