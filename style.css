@@ -322,7 +322,14 @@ th{position:relative}
 
 /* Message bubbles */
 .ncp-bubble{display:flex;flex-direction:column;gap:4px;max-width:88%}
-.ncp-bubble-user{align-self:flex-end;align-items:flex-end}
+.ncp-bubble-user{align-self:flex-end;align-items:flex-end;position:relative}
+.ncp-bubble-actions{display:flex;justify-content:flex-end;opacity:0;transition:opacity 0.15s;height:0;overflow:visible}
+.ncp-bubble:hover .ncp-bubble-actions{opacity:1}
+.ncp-bubble-editing .ncp-bubble-content{outline:2px solid var(--nass-gold-500,#c8a400);outline-offset:2px;opacity:0.7}
+.ncp-edit-btn{background:var(--bg-card,#fff);border:1px solid var(--border-default,#c8cdd8);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;color:var(--fg-muted,#5a6375);margin-top:-12px;box-shadow:0 1px 4px rgba(0,0,0,0.12);transition:background 0.12s,color 0.12s;flex-shrink:0}
+.ncp-edit-btn:hover{background:var(--nass-navy-700,#003366);color:#fff;border-color:transparent}
+body.dark .ncp-edit-btn{background:var(--bg-subtle,#0e1f3a);border-color:var(--border-default,#24375a);color:var(--fg-muted,#96a3bc)}
+body.dark .ncp-edit-btn:hover{background:var(--nass-gold-500,#e6c53a);color:#0a1628;border-color:transparent}
 .ncp-bubble-assistant{align-self:flex-start;align-items:flex-start}
 .ncp-bubble-label{font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:1px}
 .ncp-bubble-user .ncp-bubble-label{color:#6b8cb8}

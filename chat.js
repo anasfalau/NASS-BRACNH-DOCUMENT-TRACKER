@@ -18,10 +18,12 @@
     'Show recently received documents',
   ];
 
-  let chatHistory = [];
-  let isStreaming  = false;
-  let sugHidden    = false;
-  let lastUserMsg  = '';
+  let chatHistory    = [];
+  let isStreaming    = false;
+  let sugHidden      = false;
+  let lastUserMsg    = '';
+  let _editingBubble = null;
+  let _editingHistIdx = -1;
 
   // ── Build DOM ────────────────────────────────────────────────────
   function buildUI() {
@@ -192,7 +194,18 @@
       if (st) st.style.display = 'none';
     }
 
-    addBubble('user', text);
+    if (_editingBubble) {
+      var msgs = document.getElementById('ncp-msgs');
+      var bubbles = Array.from(msgs.children);
+      var editIdx = bubbles.indexOf(_editingBubble);
+      if (editIdx !== -1) bubbles.slice(editIdx).forEach(function(b) { b.remove(); });
+      chatHistory = chatHistory.slice(0, _editingHistIdx);
+      _editingBubble = null;
+      _editingHistIdx = -1;
+    }
+
+    var histIdx = chatHistory.length;
+    addBubble('user', text, histIdx);
     chatHistory.push({ role: 'user', content: text });
     if (chatHistory.length > MAX_HIST) chatHistory = chatHistory.slice(-MAX_HIST);
 
@@ -278,16 +291,35 @@
   };
 
   // ── DOM helpers ──────────────────────────────────────────────────
-  function addBubble(role, text) {
+  window._nassAiEdit = function(btn) {
+    if (isStreaming) return;
+    var bubble = btn.closest('.ncp-bubble');
+    var histIdx = parseInt(bubble.dataset.histIdx, 10);
+    var entry = chatHistory[histIdx];
+    if (!entry) return;
+    var input = document.getElementById('ncp-input');
+    input.value = entry.content;
+    window._nassAiResize(input);
+    input.focus();
+    _editingBubble  = bubble;
+    _editingHistIdx = histIdx;
+    bubble.classList.add('ncp-bubble-editing');
+  };
+
+  function addBubble(role, text, histIdx) {
     var msgs = document.getElementById('ncp-msgs');
     var wrap = document.createElement('div');
     wrap.className = 'ncp-bubble ncp-bubble-' + role;
     var ts = '<span class="ncp-ts">' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + '</span>';
 
     if (role === 'user') {
+      if (histIdx !== undefined) wrap.dataset.histIdx = histIdx;
       wrap.innerHTML =
         '<div class="ncp-bubble-label">You ' + ts + '</div>' +
-        '<div class="ncp-bubble-content">' + escHtml(text) + '</div>';
+        '<div class="ncp-bubble-content">' + escHtml(text) + '</div>' +
+        '<div class="ncp-bubble-actions">' +
+          '<button class="ncp-edit-btn" onclick="window._nassAiEdit(this)" title="Edit message">&#9998;</button>' +
+        '</div>';
     } else {
       wrap.innerHTML =
         '<div class="ncp-bubble-label">&#129302; NASS AI ' + ts + '</div>' +
