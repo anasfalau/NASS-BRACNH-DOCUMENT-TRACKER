@@ -39,7 +39,7 @@ var _fiPage=0;function renderAdmin(){function draw(list,cid){var el=document.get
 function showAI(w){document.getElementById('ai-'+w).style.display='flex';document.getElementById('av-'+w).focus();}
 function hideAI(w){document.getElementById('ai-'+w).style.display='none';document.getElementById('av-'+w).value='';}
 function saveAI(w){var v=document.getElementById('av-'+w).value.trim();if(!v)return;var L=w==='officers'?officers:w==='fileIndex'?fileIndex:w==='statuses'?statuses:w==='locations'?locations:actions;if(!L.includes(v))L.push(v);saveData();hideAI(w);renderAdmin();refresh();}
-function showView(v){if((v==='admin'||v==='users')&&(window.userRole||'viewer')!=='superuser')return;if(v==='audit'&&!['editor','superuser'].includes(window.userRole||'viewer'))return;var tbi=document.getElementById('tb-inbox');if(tbi)tbi.classList.toggle('on',v==='inbox');document.getElementById('tb-tracker').classList.toggle('on',v==='tracker');var tbd=document.getElementById('tb-dashboard');if(tbd)tbd.classList.toggle('on',v==='dashboard');document.getElementById('tb-admin').classList.toggle('on',v==='admin');var tbu=document.getElementById('tb-users');if(tbu)tbu.classList.toggle('on',v==='users');var tba=document.getElementById('tb-audit');if(tba)tba.classList.toggle('on',v==='audit');var tbk=document.getElementById('tb-kanban');if(tbk)tbk.classList.toggle('on',v==='kanban');document.getElementById('view-tracker').style.display=v==='tracker'?'block':'none';var vd=document.getElementById('view-dashboard');if(vd)vd.style.display=v==='dashboard'?'block':'none';document.getElementById('view-admin').style.display=v==='admin'?'flex':'none';var vu=document.getElementById('view-users');if(vu)vu.style.display=v==='users'?'block':'none';var va=document.getElementById('view-audit');if(va)va.style.display=v==='audit'?'block':'none';var vi=document.getElementById('view-inbox');if(vi)vi.style.display=v==='inbox'?'block':'none';var vk=document.getElementById('view-kanban');if(vk)vk.style.display=v==='kanban'?'block':'none';if(v==='admin'){renderAdmin();loadMappings();}if(v==='users')loadUsersPanel();if(v==='dashboard'){renderDashboard();var _db=document.querySelector('#tb-dashboard .tab-badge');if(_db)_db.style.display='none';}if(v==='audit')loadAuditLog(1);if(v==='kanban')renderKanban();if(v==='inbox')loadInbox();}
+function showView(v){if((v==='admin'||v==='users')&&(window.userRole||'viewer')!=='superuser')return;if(v==='audit'&&!['editor','superuser'].includes(window.userRole||'viewer'))return;var tbi=document.getElementById('tb-inbox');if(tbi)tbi.classList.toggle('on',v==='inbox');document.getElementById('tb-tracker').classList.toggle('on',v==='tracker');var tbd=document.getElementById('tb-dashboard');if(tbd)tbd.classList.toggle('on',v==='dashboard');document.getElementById('tb-admin').classList.toggle('on',v==='admin');var tbu=document.getElementById('tb-users');if(tbu)tbu.classList.toggle('on',v==='users');var tba=document.getElementById('tb-audit');if(tba)tba.classList.toggle('on',v==='audit');var tbk=document.getElementById('tb-kanban');if(tbk)tbk.classList.toggle('on',v==='kanban');var tbm=document.getElementById('tb-mail');if(tbm)tbm.classList.toggle('on',v==='mail');document.getElementById('view-tracker').style.display=v==='tracker'?'block':'none';var vd=document.getElementById('view-dashboard');if(vd)vd.style.display=v==='dashboard'?'block':'none';document.getElementById('view-admin').style.display=v==='admin'?'flex':'none';var vu=document.getElementById('view-users');if(vu)vu.style.display=v==='users'?'block':'none';var va=document.getElementById('view-audit');if(va)va.style.display=v==='audit'?'block':'none';var vi=document.getElementById('view-inbox');if(vi)vi.style.display=v==='inbox'?'block':'none';var vk=document.getElementById('view-kanban');if(vk)vk.style.display=v==='kanban'?'block':'none';var vml=document.getElementById('view-mail');if(vml)vml.style.display=v==='mail'?'block':'none';if(v==='admin'){renderAdmin();loadMappings();}if(v==='users')loadUsersPanel();if(v==='dashboard'){renderDashboard();var _db=document.querySelector('#tb-dashboard .tab-badge');if(_db)_db.style.display='none';}if(v==='audit')loadAuditLog(1);if(v==='kanban')renderKanban();if(v==='mail'){loadMail('inbox');_mlLoadBadges();}if(v==='inbox')loadInbox();}
 // ── Dashboard ─────────────────────────────────────────────────────
 var _chartJsLoaded=false;
 function renderDashboard(){
@@ -366,7 +366,7 @@ async function saveMappings(){
   }
 }
 
-function applyRolePermissions(){var r=window.userRole||'viewer';var isSU=r==='superuser';var isEd=r==='editor'||isSU;if(!isEd){document.querySelectorAll('[onclick="openModal()"]').forEach(function(b){b.style.display='none';});var exp=document.querySelector('[onclick="exportCSV()"]');if(exp)exp.style.display='none';}document.getElementById('tb-admin').style.display=isSU?'':'none';var tbu=document.getElementById('tb-users');if(tbu)tbu.style.display=isSU?'':'none';var tba=document.getElementById('tb-audit');if(tba)tba.style.display=isEd?'':'none';var tbk2=document.getElementById('tb-kanban');if(tbk2)tbk2.style.display=isEd?'':'none';if(!isEd){var dem=document.querySelector('#detail-mbg .mok');if(dem)dem.style.display='none';}var tbi2=document.getElementById('tb-inbox');if(tbi2)tbi2.style.display='';var rb=document.getElementById('nass-user-role-badge');if(rb){rb.textContent=r.charAt(0).toUpperCase()+r.slice(1);rb.style.display='inline-block';}}
+function applyRolePermissions(){var r=window.userRole||'viewer';var isSU=r==='superuser';var isEd=r==='editor'||isSU;if(!isEd){document.querySelectorAll('[onclick="openModal()"]').forEach(function(b){b.style.display='none';});var exp=document.querySelector('[onclick="exportCSV()"]');if(exp)exp.style.display='none';}document.getElementById('tb-admin').style.display=isSU?'':'none';var tbu=document.getElementById('tb-users');if(tbu)tbu.style.display=isSU?'':'none';var tba=document.getElementById('tb-audit');if(tba)tba.style.display=isEd?'':'none';var tbk2=document.getElementById('tb-kanban');if(tbk2)tbk2.style.display=isEd?'':'none';if(!isEd){var dem=document.querySelector('#detail-mbg .mok');if(dem)dem.style.display='none';}var tbi2=document.getElementById('tb-inbox');if(tbi2)tbi2.style.display='';var tbml=document.getElementById('tb-mail');if(tbml)tbml.style.display='';var rb=document.getElementById('nass-user-role-badge');if(rb){rb.textContent=r.charAt(0).toUpperCase()+r.slice(1);rb.style.display='inline-block';}}
 var MU_URL='https://sblqmpmawkogbbzzkwxt.supabase.co/functions/v1/manage-users';
 async function _muReq(method,body){var s=(await window._sb.auth.getSession()).data.session;var o={method:method,headers:{Authorization:'Bearer '+s.access_token,'Content-Type':'application/json'}};if(body)o.body=JSON.stringify(body);var resp=await fetch(MU_URL,o);var d=await resp.json().catch(function(){return{};});if(!resp.ok)throw new Error(d.error||'Request failed ('+resp.status+')');return d;}
 async function loadUsersPanel(){var el=document.getElementById('u-list-body');if(!el)return;el.innerHTML='<tr><td colspan="4" style="text-align:center;padding:24px;color:#888">Loading…</td></tr>';try{var data=await _muReq('GET');el.innerHTML='';if(!data.length){el.innerHTML='<tr><td colspan="4" style="text-align:center;padding:24px;color:#888">No users found.</td></tr>';return;}var delSvg='<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="1.5" y1="1.5" x2="9.5" y2="9.5"/><line x1="9.5" y1="1.5" x2="1.5" y2="9.5"/></svg>';data.forEach(function(u){var isSelf=(window.userSession&&u.user_id===window.userSession.user.id);var roles=['superuser','editor','viewer'];var selHtml='<select class="u-role-sel"'+(isSelf?' disabled':'')+' onchange="updateUserRole(\''+u.user_id+'\',this.value)">'+roles.map(function(rv){return'<option value="'+rv+'"'+(rv===u.role?' selected':'')+'>'+rv.charAt(0).toUpperCase()+rv.slice(1)+'</option>';}).join('')+'</select>';var tr=document.createElement('tr');tr.innerHTML='<td style="display:flex;align-items:center"><span class="u-avatar">'+u.email[0].toUpperCase()+'</span><span>'+u.email+(isSelf?' <span class="u-you">(you)</span>':'')+'</span></td><td><span class="role-badge role-'+u.role+'">'+u.role+'</span></td><td>'+selHtml+'</td><td style="text-align:center">'+(isSelf?'<span style="color:var(--fg-faint);font-size:12px">—</span>':'<button class="del" title="Remove user" onclick="removeUser(\''+u.user_id+'\',\''+u.email+'\')">'+delSvg+'</button>')+'</td>';el.appendChild(tr);});}catch(e){el.innerHTML='<tr><td colspan="4" style="color:var(--signal-danger);padding:14px">Error: '+e.message+'</td></tr>';}}
@@ -748,3 +748,263 @@ function duplicateRecord(idx){if(!['editor','superuser'].includes(window.userRol
 // ── Dark Mode ─────────────────────────────────────────────────────
 function toggleDarkMode(){var on=document.body.classList.toggle('dark');document.documentElement.setAttribute('data-theme',on?'dark':'');localStorage.setItem('nassDark',on?'1':'0');var b=document.getElementById('dm-btn');if(b){b.title=on?'Switch to light mode':'Switch to dark mode';b.textContent=on?'\u2600':'\u263e';}}
 (function(){var on=localStorage.getItem('nassDark')==='1';if(on){document.body.classList.add('dark');document.documentElement.setAttribute('data-theme','dark');var b=document.getElementById('dm-btn');if(b){b.title='Switch to light mode';b.textContent='\u2600';}}})();
+
+// ── Internal Mail ─────────────────────────────────────────────────
+var _mlFolder='inbox',_mlList=[],_mlPage=0,_mlPPG=15,_mlUsersMap={},_mlAllUsers=[],_mlComposeDraftId=null,_mlComposeReplyTo=null;
+
+function loadMail(folder){
+  if(folder)_mlFolder=folder;
+  if(!window._sb||!window.userSession)return;
+  var uid=window.userSession.user.id;
+  if(!_mlAllUsers.length){
+    window._sb.from('nass_profiles').select('user_id,email').then(function(r){
+      _mlAllUsers=r.data||[];
+      _mlAllUsers.forEach(function(u){_mlUsersMap[u.user_id]=u.email;});
+      _mlFetch(uid);
+    });
+  } else {_mlFetch(uid);}
+}
+
+function _mlFetch(uid){
+  var fTitle={inbox:'Inbox',sent:'Sent',drafts:'Drafts',trash:'Trash'};
+  var ft=document.getElementById('ml-folder-title');if(ft)ft.textContent=fTitle[_mlFolder]||'Mail';
+  document.querySelectorAll('.gm-side-lbl[id^="ml-f-"]').forEach(function(el){el.classList.remove('gm-side-active');});
+  var act=document.getElementById('ml-f-'+_mlFolder);if(act)act.classList.add('gm-side-active');
+  var ml=document.getElementById('ml-list');var md=document.getElementById('ml-detail');
+  if(ml){ml.innerHTML='<div class="gm-loading">Loading\u2026</div>';ml.style.display='block';}
+  if(md)md.style.display='none';
+  _mlPage=0;
+
+  if(_mlFolder==='inbox'){
+    window._sb.from('nass_mail_recipients').select('id,mail_id,type,read_at').eq('recipient_id',uid).is('deleted_at',null).then(function(rRes){
+      var recips=rRes.data||[];
+      if(!recips.length){_mlList=[];_mlRenderList();return;}
+      var ids=recips.map(function(r){return r.mail_id;});
+      var rm={};recips.forEach(function(r){rm[r.mail_id]=r;});
+      window._sb.from('nass_mail').select('id,subject,body,is_draft,created_at,sender_id,parent_id').in('id',ids).eq('is_draft',false).order('created_at',{ascending:false}).then(function(mRes){
+        _mlList=(mRes.data||[]).map(function(m){return Object.assign({},m,{_read:!!(rm[m.id]&&rm[m.id].read_at),_recip_row_id:rm[m.id]&&rm[m.id].id,_recip_type:rm[m.id]&&rm[m.id].type});});
+        _mlRenderList();_mlLoadBadges();
+      });
+    });
+  } else if(_mlFolder==='sent'){
+    window._sb.from('nass_mail').select('id,subject,body,is_draft,created_at,sender_id,parent_id').eq('sender_id',uid).eq('is_draft',false).order('created_at',{ascending:false}).then(function(mRes){
+      var mails=mRes.data||[];
+      if(!mails.length){_mlList=[];_mlRenderList();return;}
+      var ids=mails.map(function(m){return m.id;});
+      window._sb.from('nass_mail_recipients').select('mail_id,recipient_id,type').in('mail_id',ids).eq('type','to').then(function(rRes){
+        var rm={};(rRes.data||[]).forEach(function(r){if(!rm[r.mail_id])rm[r.mail_id]=[];rm[r.mail_id].push(r.recipient_id);});
+        _mlList=mails.map(function(m){return Object.assign({},m,{_to_ids:rm[m.id]||[]});});
+        _mlRenderList();
+      });
+    });
+  } else if(_mlFolder==='drafts'){
+    window._sb.from('nass_mail').select('id,subject,body,is_draft,created_at,sender_id,parent_id').eq('sender_id',uid).eq('is_draft',true).order('created_at',{ascending:false}).then(function(mRes){
+      _mlList=mRes.data||[];_mlRenderList();_mlLoadBadges();
+    });
+  } else {
+    window._sb.from('nass_mail_recipients').select('id,mail_id,type,read_at').eq('recipient_id',uid).not('deleted_at','is',null).then(function(rRes){
+      var recips=rRes.data||[];
+      if(!recips.length){_mlList=[];_mlRenderList();return;}
+      var ids=recips.map(function(r){return r.mail_id;});
+      var rm={};recips.forEach(function(r){rm[r.mail_id]=r;});
+      window._sb.from('nass_mail').select('id,subject,body,is_draft,created_at,sender_id,parent_id').in('id',ids).order('created_at',{ascending:false}).then(function(mRes){
+        _mlList=(mRes.data||[]).map(function(m){return Object.assign({},m,{_read:true,_recip_row_id:rm[m.id]&&rm[m.id].id,_trashed:true});});
+        _mlRenderList();
+      });
+    });
+  }
+}
+
+function _mlRenderList(){
+  var ml=document.getElementById('ml-list');if(!ml)return;
+  if(!_mlList.length){ml.innerHTML='<div class="gm-empty">No messages here.</div>';_mlUpdatePager();return;}
+  var start=_mlPage*_mlPPG,end=Math.min(start+_mlPPG,_mlList.length);
+  var slice=_mlList.slice(start,end);
+  var h='<table class="gm-tbl"><tbody>';
+  slice.forEach(function(m){
+    var unread=_mlFolder==='inbox'&&!m._read;
+    var from='';
+    if(_mlFolder==='sent'){from='To: '+((m._to_ids||[]).map(function(id){return _mlUsersMap[id]||id;}).join(', ')||'(no recipients)');}
+    else {from=_mlUsersMap[m.sender_id]||m.sender_id||'Unknown';}
+    h+='<tr class="gm-row'+(unread?' gm-unread':'')+'" onclick="_mlOpenMail(\''+m.id+'\')">'
+      +'<td class="gm-td-from">'+_esc(from)+'</td>'
+      +'<td class="gm-td-subject">'+(unread?'<span class="gm-dot"></span>':'')+(_mlFolder==='drafts'?'<span class="ml-draft-lbl">Draft</span>':'')+_esc(m.subject||'(no subject)')+'</td>'
+      +'<td class="gm-td-date">'+_mlFmtDate(m.created_at)+'</td>'
+      +'<td class="gm-td-act">'+(_mlFolder!=='trash'?'<button class="ml-del-btn" onclick="event.stopPropagation();_mlTrashMail(\''+m.id+'\')" title="Delete">\u{1F5D1}</button>':'<button class="ml-del-btn" onclick="event.stopPropagation();_mlRestoreMail(\''+m.id+'\')" title="Restore to Inbox">&#8635;</button>')+'</td>'
+    +'</tr>';
+  });
+  h+='</tbody></table>';
+  ml.innerHTML=h;_mlUpdatePager();
+}
+
+function _mlUpdatePager(){
+  var total=_mlList.length,start=_mlPage*_mlPPG,end=Math.min(start+_mlPPG,total);
+  var pg=document.getElementById('ml-pg-info');if(pg)pg.textContent=total?(start+1)+'\u2013'+end+' of '+total:'';
+  var pp=document.getElementById('ml-pg-prev');if(pp)pp.disabled=_mlPage===0;
+  var pn=document.getElementById('ml-pg-next');if(pn)pn.disabled=end>=total;
+}
+
+function _mlPagePrev(){if(_mlPage>0){_mlPage--;_mlRenderList();}}
+function _mlPageNext(){if((_mlPage+1)*_mlPPG<_mlList.length){_mlPage++;_mlRenderList();}}
+function _mlSetFolder(folder,el){_mlFolder=folder;loadMail();}
+
+function _mlFmtDate(ts){
+  if(!ts)return'';
+  var d=new Date(ts),now=new Date();
+  var today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  var dt=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  if(dt.getTime()===today.getTime())return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString([],{day:'2-digit',month:'short'});
+}
+
+function _mlOpenMail(mailId){
+  var m=_mlList.find(function(x){return x.id===mailId;});if(!m)return;
+  if(_mlFolder==='inbox'&&!m._read&&m._recip_row_id){
+    window._sb.from('nass_mail_recipients').update({read_at:new Date().toISOString()}).eq('id',m._recip_row_id).then();
+    m._read=true;_mlLoadBadges();
+  }
+  var ml=document.getElementById('ml-list');var md=document.getElementById('ml-detail');
+  if(ml)ml.style.display='none';if(!md)return;md.style.display='block';
+  var sender=_mlUsersMap[m.sender_id]||m.sender_id||'Unknown';
+  var toLine='';
+  if(m._to_ids&&m._to_ids.length)toLine='<div class="ml-det-meta">To: '+_esc(m._to_ids.map(function(id){return _mlUsersMap[id]||id;}).join(', '))+'</div>';
+  var actions='<button class="btn btn-ghost" onclick="_mlBackToList()">&#8592; Back</button>';
+  if(_mlFolder==='inbox'||_mlFolder==='trash')actions+='<button class="btn btn-ghost" onclick="openMailCompose({replyTo:\''+mailId+'\',subject:\'Re: '+_esc((m.subject||'').replace(/'/g,''))+'\',toEmail:\''+_esc(_mlUsersMap[m.sender_id]||'')+'\'})" style="margin-left:8px">&#8617; Reply</button>';
+  if(_mlFolder==='drafts')actions+='<button class="btn btn-gold" onclick="_mlEditDraft(\''+mailId+'\')" style="margin-left:8px">&#9998; Edit Draft</button>';
+  actions+='<button class="btn btn-ghost" onclick="_mlTrashMail(\''+mailId+'\')" style="margin-left:auto;color:#b81c2e">&#128465; Delete</button>';
+  md.innerHTML='<div class="ml-det-toolbar">'+actions+'</div>'
+    +'<div class="ml-det-head">'
+      +'<div class="ml-det-subject">'+_esc(m.subject||'(no subject)')+'</div>'
+      +'<div class="ml-det-from">From: <strong>'+_esc(sender)+'</strong></div>'
+      +toLine
+      +'<div class="ml-det-date">'+new Date(m.created_at).toLocaleString()+'</div>'
+    +'</div>'
+    +'<div class="ml-det-body"><pre class="ml-body-pre">'+_esc(m.body||'(empty message)')+'</pre></div>';
+}
+
+function _mlBackToList(){
+  var ml=document.getElementById('ml-list');var md=document.getElementById('ml-detail');
+  if(ml)ml.style.display='block';if(md)md.style.display='none';
+}
+
+function _mlTrashMail(mailId){
+  var uid=window.userSession&&window.userSession.user.id;
+  var m=_mlList.find(function(x){return x.id===mailId;});
+  if(_mlFolder==='sent'||_mlFolder==='drafts'){
+    if(!confirm('Permanently delete this message?'))return;
+    window._sb.from('nass_mail').delete().eq('id',mailId).eq('sender_id',uid).then(function(){showToast('Deleted.','ok');loadMail();});
+  } else if(_mlFolder==='trash'){
+    if(!confirm('Permanently delete this message?'))return;
+    if(m&&m._recip_row_id)window._sb.from('nass_mail_recipients').delete().eq('id',m._recip_row_id).then(function(){showToast('Deleted.','ok');loadMail();});
+  } else {
+    if(m&&m._recip_row_id)window._sb.from('nass_mail_recipients').update({deleted_at:new Date().toISOString()}).eq('id',m._recip_row_id).then(function(){showToast('Moved to Trash.','ok');loadMail();});
+  }
+}
+
+function _mlRestoreMail(mailId){
+  var m=_mlList.find(function(x){return x.id===mailId;});
+  if(m&&m._recip_row_id)window._sb.from('nass_mail_recipients').update({deleted_at:null}).eq('id',m._recip_row_id).then(function(){showToast('Restored to Inbox.','ok');loadMail();});
+}
+
+function _mlEditDraft(mailId){
+  var m=_mlList.find(function(x){return x.id===mailId;});if(!m)return;
+  openMailCompose({draftId:m.id,subject:m.subject,body:m.body});
+}
+
+function _mlLoadBadges(){
+  if(!window._sb||!window.userSession)return;
+  var uid=window.userSession.user.id;
+  window._sb.from('nass_mail_recipients').select('id',{count:'exact',head:true}).eq('recipient_id',uid).is('deleted_at',null).is('read_at',null).then(function(r){
+    var ct=r.count||0;
+    var ib=document.getElementById('ml-badge-inbox');if(ib){ib.textContent=ct;ib.style.display=ct?'inline-flex':'none';}
+    var tb=document.getElementById('ml-tab-badge');if(tb){tb.textContent=ct;tb.style.display=ct?'inline-flex':'none';}
+  });
+  window._sb.from('nass_mail').select('id',{count:'exact',head:true}).eq('sender_id',window.userSession.user.id).eq('is_draft',true).then(function(r){
+    var ct=r.count||0;var db=document.getElementById('ml-badge-drafts');if(db){db.textContent=ct;db.style.display=ct?'inline-flex':'none';}
+  });
+}
+
+function openMailCompose(opts){
+  opts=opts||{};
+  _mlComposeDraftId=opts.draftId||null;
+  _mlComposeReplyTo=opts.replyTo||null;
+  if(!_mlAllUsers.length&&window._sb){
+    window._sb.from('nass_profiles').select('user_id,email').then(function(r){
+      _mlAllUsers=r.data||[];
+      _mlAllUsers.forEach(function(u){_mlUsersMap[u.user_id]=u.email;});
+    });
+  }
+  var panel=document.getElementById('ml-compose');if(!panel)return;
+  document.getElementById('ml-to').value=opts.toEmail||opts.to||'';
+  document.getElementById('ml-cc').value=opts.cc||'';
+  document.getElementById('ml-subj').value=opts.subject||'';
+  document.getElementById('ml-body-txt').value=opts.body||'';
+  document.getElementById('ml-compose-title').textContent=opts.replyTo?'Reply':opts.draftId?'Edit Draft':'New Message';
+  panel.style.display='block';panel.classList.remove('ml-minimized');
+  document.getElementById('ml-compose-body').style.display='block';
+  setTimeout(function(){var t=document.getElementById('ml-to');if(t)t.focus();},80);
+}
+
+function _mlCloseCompose(){var p=document.getElementById('ml-compose');if(p)p.style.display='none';_mlComposeDraftId=null;_mlComposeReplyTo=null;}
+function _mlDiscardDraft(){if(!confirm('Discard this message?'))return;_mlCloseCompose();}
+function _mlMinimize(){
+  var p=document.getElementById('ml-compose');var b=document.getElementById('ml-compose-body');
+  if(!p)return;p.classList.toggle('ml-minimized');if(b)b.style.display=p.classList.contains('ml-minimized')?'none':'block';
+}
+
+function _mlSuggestTo(val){
+  var box=document.getElementById('ml-to-suggest');if(!box)return;
+  if(!val||val.length<2){box.style.display='none';box.innerHTML='';return;}
+  var q=val.toLowerCase();
+  var matches=_mlAllUsers.filter(function(u){return u.email.toLowerCase().includes(q);}).slice(0,7);
+  if(!matches.length){box.style.display='none';return;}
+  box.innerHTML=matches.map(function(u){return'<div class="ml-suggest-item" onclick="_mlPickSuggest(\''+_esc(u.email)+'\')">'+_esc(u.email)+'</div>';}).join('');
+  box.style.display='block';
+}
+function _mlPickSuggest(email){var i=document.getElementById('ml-to');if(i)i.value=email;var b=document.getElementById('ml-to-suggest');if(b){b.style.display='none';b.innerHTML='';}}
+
+function _mlSend(){
+  var toVal=(document.getElementById('ml-to').value||'').trim();
+  var ccVal=(document.getElementById('ml-cc').value||'').trim();
+  var subj=(document.getElementById('ml-subj').value||'').trim();
+  var body=(document.getElementById('ml-body-txt').value||'').trim();
+  if(!toVal){showToast('Enter at least one recipient.','warn');return;}
+  if(!subj){showToast('Subject cannot be empty.','warn');return;}
+  if(!body){showToast('Message body cannot be empty.','warn');return;}
+  var uid=window.userSession.user.id;
+  var toEmails=toVal.split(',').map(function(e){return e.trim();}).filter(Boolean);
+  var ccEmails=ccVal?ccVal.split(',').map(function(e){return e.trim();}).filter(Boolean):[];
+  var toIds=toEmails.map(function(e){var u=_mlAllUsers.find(function(x){return x.email.toLowerCase()===e.toLowerCase();});return u?u.user_id:null;}).filter(Boolean);
+  var ccIds=ccEmails.map(function(e){var u=_mlAllUsers.find(function(x){return x.email.toLowerCase()===e.toLowerCase();});return u?u.user_id:null;}).filter(Boolean);
+  if(!toIds.length){showToast('Recipient not found. Must be a registered user.','warn');return;}
+  var mailData={sender_id:uid,subject:subj,body:body,is_draft:false};
+  if(_mlComposeReplyTo)mailData.parent_id=_mlComposeReplyTo;
+  var insertOrUpdate=_mlComposeDraftId
+    ?window._sb.from('nass_mail').update(mailData).eq('id',_mlComposeDraftId).select('id').single()
+    :window._sb.from('nass_mail').insert(mailData).select('id').single();
+  insertOrUpdate.then(function(res){
+    if(res.error){showToast('Send failed: '+res.error.message,'error');return;}
+    var mid=res.data.id;
+    var rows=toIds.map(function(id){return{mail_id:mid,recipient_id:id,type:'to'};});
+    ccIds.forEach(function(id){rows.push({mail_id:mid,recipient_id:id,type:'cc'});});
+    window._sb.from('nass_mail_recipients').upsert(rows,{onConflict:'mail_id,recipient_id'}).then(function(){
+      showToast('Message sent.','ok');_mlCloseCompose();if(_mlFolder==='sent')loadMail();else _mlLoadBadges();
+    });
+  });
+}
+
+function _mlSaveDraft(){
+  var subj=(document.getElementById('ml-subj').value||'').trim()||'(no subject)';
+  var body=(document.getElementById('ml-body-txt').value||'').trim();
+  var uid=window.userSession.user.id;
+  var data={sender_id:uid,subject:subj,body:body,is_draft:true,updated_at:new Date().toISOString()};
+  if(_mlComposeDraftId){
+    window._sb.from('nass_mail').update(data).eq('id',_mlComposeDraftId).then(function(r){
+      if(r.error)showToast('Draft save failed.','error');else showToast('Draft saved.','ok');_mlLoadBadges();
+    });
+  } else {
+    window._sb.from('nass_mail').insert(data).select('id').single().then(function(r){
+      if(r.error)showToast('Draft save failed.','error');else{_mlComposeDraftId=r.data.id;showToast('Draft saved.','ok');_mlLoadBadges();}
+    });
+  }
+}
