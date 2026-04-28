@@ -148,6 +148,7 @@ if ('serviceWorker' in navigator) {
     <button class="tab"    id="tb-kanban"    onclick="showView('kanban')">&#9783; Kanban</button>
     <button class="tab"    id="tb-audit"     onclick="showView('audit')" style="display:none">&#128203; Activity Log</button>
     <button class="tab"    id="tb-mail"      onclick="showView('mail')"  style="display:none">&#9993; Mail<span id="ml-tab-badge" class="tab-badge" style="display:none"></span></button>
+    <button class="tab"    id="tb-drivesearch" onclick="showView('drivesearch')">&#128269; Drive Search</button>
   </div>
   <button class="btn btn-ghost dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Toggle dark mode">&#9790;</button>
   <button class="btn btn-ghost" id="ms-btn" onclick="window._nassMsLaunch()" title="Open Messenger" style="display:none">&#128172; Chat</button>
@@ -493,6 +494,37 @@ if ('serviceWorker' in navigator) {
       </div>
       <div id="al-pager" class="db-pager" style="margin-top:10px"></div>
     </div>
+  </div>
+</div>
+
+<!-- Drive Search View -->
+<div id="view-drivesearch" style="display:none;min-height:calc(100vh - 56px);background:var(--bg-app,#eef1f6)">
+  <div class="ds-wrap">
+    <div class="ds-header">
+      <div class="ds-header-title">&#128269; Google Drive Search</div>
+      <p class="ds-header-sub">Search all documents across Google Drive — including files not yet in the tracker.</p>
+    </div>
+    <div class="ds-search-bar">
+      <input type="text" id="ds-input" class="ds-input" placeholder="Search by keyword, file name, or reference number…" onkeydown="if(event.key==='Enter')driveSearch()">
+      <button class="btn btn-navy ds-btn" onclick="driveSearch()">Search</button>
+    </div>
+    <div id="ds-results" class="ds-results">
+      <div class="ds-empty-state">Enter a search term above to find documents in Google Drive.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Drive PDF Preview Modal -->
+<div class="mbg" id="ds-pdf-bg" onclick="if(event.target===this)document.getElementById('ds-pdf-bg').classList.remove('open')">
+  <div class="mbox ds-pdf-mbox">
+    <div class="ds-pdf-header">
+      <span id="ds-pdf-title" class="ds-pdf-title"></span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <a id="ds-pdf-open" href="#" target="_blank" class="btn btn-navy" style="font-size:11px;padding:5px 12px">Open in Drive</a>
+        <button class="mcancel" onclick="document.getElementById('ds-pdf-bg').classList.remove('open');document.getElementById('ds-pdf-frame').src=''">Close</button>
+      </div>
+    </div>
+    <iframe id="ds-pdf-frame" src="" class="ds-pdf-frame" allowfullscreen></iframe>
   </div>
 </div>
 
