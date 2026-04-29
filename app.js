@@ -121,16 +121,17 @@ function _dsRelevance(q,filename,mime){
   var qNorm=q.toLowerCase().replace(/[^a-z0-9\s]/g,' ').trim();
   // Exact phrase → perfect score
   if(fname.includes(qNorm))return 1.0;
-  // Weighted term overlap: longer terms are worth more
-  var total=0,matched=0;
+  // Weighted term overlap — miss penalty prevents generic shared terms
+  // from masking a name/service-number mismatch
+  var total=0,matched=0,missed=0;
   terms.forEach(function(t){
-    var w=Math.max(1,t.length-2); // weight by term length
+    var w=Math.max(1,t.length-2);
     total+=w;
     if(fname.includes(t))matched+=w;
-    
+    else missed+=w;
   });
-  var base=total>0?matched/total:0;
-  // Small boost for PDFs (most useful for this app)
+  if(!total)return 0;
+  var base=Math.max(0,(matched-missed*2)/total);
   if(mime==='application/pdf')base=Math.min(1,base+0.05);
   return base;
 }
@@ -536,7 +537,7 @@ function _gwithToken(cb){
 }
 
 // ── Stop words to ignore when picking search terms ──
-var _gStop=new Set(['that','this','with','from','have','will','been','were','they','their','which','when','what','where','also','more','into','some','than','then','there','these','those','after','about','other','your','each','such','over','both','during','before','between','should','could','would','shall','must','being','having','making','taking','request','order','ensure','conduct','first','second','third','within','under','above','following','regard','subject','letter','dated','naval','headquarters','branch','navy','nigerian','officer','command','approval','international','assessment','assessments','establishment','establishments','infrastructure','environmental','management','conference','compliance','standardisation','production','presentation','inspection','invitation','attend','place','work','safety','report','executive','evaluation','annual','facilities','office','purchase','senior','retired','exercise','general','quarter','systems','standard','standards','equipment','items','funds','review','summary','activities','information','operations','random','hazards','joint','video','audit','ships','minute','action','forward','herewith','attached','copy','copies','reference','attention','necessary','required','submit','submitted','provide','provided','note','noted','seen','date','please','kindly','urgent','immediate','memo','signal','flag','issue','issued','direct','directed','follow','upon','into','back','down','from','been','done','made','take','came','come','went','went','come','goes','going','give','given','keep','kept','hold','held','show','shown','find','found','know','known','said','says','said','well','very','just','only','also','much','many','most','more','less','same','like','used','uses','need','needed','using','used']);
+var _gStop=new Set(['that','this','with','from','have','will','been','were','they','their','which','when','what','where','also','more','into','some','than','then','there','these','those','after','about','other','your','each','such','over','both','during','before','between','should','could','would','shall','must','being','having','making','taking','request','order','ensure','conduct','first','second','third','within','under','above','following','regard','subject','letter','dated','naval','headquarters','branch','navy','nigerian','officer','command','approval','international','assessment','assessments','establishment','establishments','infrastructure','environmental','management','conference','compliance','standardisation','production','presentation','inspection','invitation','attend','place','work','safety','report','executive','evaluation','annual','facilities','office','purchase','senior','retired','exercise','general','quarter','systems','standard','standards','equipment','items','funds','review','summary','activities','information','operations','random','hazards','joint','video','audit','ships','minute','action','forward','herewith','attached','copy','copies','reference','attention','necessary','required','submit','submitted','provide','provided','note','noted','seen','date','please','kindly','urgent','immediate','memo','signal','flag','issue','issued','direct','directed','follow','upon','into','back','down','from','been','done','made','take','came','come','went','went','come','goes','going','give','given','keep','kept','hold','held','show','shown','find','found','know','known','said','says','said','well','very','just','only','also','much','many','most','more','less','same','like','used','uses','need','needed','using','used','temporary','appointment','reappointment','posting','secondment','transfer','promotion','adm','radm','vadm','ltcdr','wocdr','sgncdr']);
 
 // ── Pick the N most distinctive words from a text ──
 // Returns [{w, acronym}] — acronym=true when word was uppercase in a mixed-case subject.
@@ -571,15 +572,16 @@ function _gScore(subject,filename){
   // Exact phrase bonus
   var subNorm=subject.toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
   if(fname.includes(subNorm.slice(0,30)))return 1.0;
-  var score=0,maxPossible=0;
+  var total=0,matched=0,missed=0;
   terms.forEach(function(t){
     var boost=t.acronym?2.5:1.0;
-    var wt=Math.max(1,t.w.length-2)*boost; // length-weighted, min 1
-    maxPossible+=wt;
-    if(fname.includes(t.w))score+=wt;
-
+    var wt=Math.max(1,t.w.length-2)*boost;
+    total+=wt;
+    if(fname.includes(t.w))matched+=wt;
+    else missed+=wt;
   });
-  return maxPossible>0?score/maxPossible:0;
+  if(!total)return 0;
+  return Math.max(0,(matched-missed*2)/total);
 }
 
 // ── Fetch PDF candidates — parallel fullText + name queries, 5 terms ──
