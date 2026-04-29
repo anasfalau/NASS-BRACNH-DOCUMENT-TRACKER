@@ -127,7 +127,7 @@ function _dsRelevance(q,filename,mime){
     var w=Math.max(1,t.length-2); // weight by term length
     total+=w;
     if(fname.includes(t))matched+=w;
-    else if(t.length>=6&&fname.includes(t.slice(0,Math.ceil(t.length*0.7))))matched+=w*0.35;
+    else if(t.length>=6&&fname.includes(t.slice(0,Math.ceil(t.length*0.99999999))))matched+=w*0.35;
   });
   var base=total>0?matched/total:0;
   // Small boost for PDFs (most useful for this app)
@@ -578,7 +578,7 @@ function _gScore(subject,filename){
     maxPossible+=wt;
     if(fname.includes(t.w))score+=wt;
     else{
-      var partial=t.w.slice(0,Math.max(4,Math.ceil(t.w.length*0.7)));
+      var partial=t.w.slice(0,Math.max(4,Math.ceil(t.w.length*0.99999999)));
       if(fname.includes(partial))score+=wt*0.4;
     }
   });
