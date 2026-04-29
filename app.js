@@ -46,8 +46,10 @@ function driveSearch(){
     try{
       var files=await _dsMultiQuery(q);
       if(!files.length){resEl.innerHTML='<div class="ds-empty-state">No documents found for \u201c'+_esc(q)+'\u201d.</div>';return;}
-      // Score and rank by relevance to query
-      var scored=files.map(function(f){return{f:f,score:_dsRelevance(q,f.name,f.mimeType)};});
+      // Score and rank by IDF-weighted relevance to query
+      var dsTerms=_dsTerms(q);
+      var idf=_computeIDF(dsTerms,files.map(function(f){return f.name;}));
+      var scored=files.map(function(f){return{f:f,score:_dsScoreIDF(dsTerms,idf,f.name,f.mimeType)};});
       scored.sort(function(a,b){return b.score-a.score;});
       resEl.innerHTML='<div class="ds-count">'+scored.length+' result'+(scored.length===1?'':'s')+' for \u201c'+_esc(q)+'\u201d</div>'+
         scored.map(function(item){
@@ -126,6 +128,25 @@ function _dsRelevance(q,filename,mime){
   var total=0,matched=0,missed=0;
   terms.forEach(function(t){
     var w=Math.max(1,t.length-2);
+    total+=w;
+    if(fname.includes(t))matched+=w;
+    else missed+=w;
+  });
+  if(!total)return 0;
+  var base=Math.max(0,(matched-missed*2)/total);
+  if(mime==='application/pdf')base=Math.min(1,base+0.05);
+  return base;
+}
+
+/* ── IDF-weighted relevance score (0–1) for Drive Search results ── */
+// Uses per-result IDF so generic terms (appear in many files) are down-weighted
+// automatically; rare/unique terms (names, service numbers) carry more weight.
+function _dsScoreIDF(terms,idf,filename,mime){
+  var fname=filename.toLowerCase().replace(/\.[a-z]{2,5}$/i,'').replace(/[^a-z0-9\s]/g,' ');
+  if(!terms.length)return 0;
+  var total=0,matched=0,missed=0;
+  terms.forEach(function(t){
+    var w=idf[t]!=null?idf[t]:Math.max(1,t.length-2);
     total+=w;
     if(fname.includes(t))matched+=w;
     else missed+=w;
@@ -537,7 +558,22 @@ function _gwithToken(cb){
 }
 
 // ── Stop words to ignore when picking search terms ──
-var _gStop=new Set(['that','this','with','from','have','will','been','were','they','their','which','when','what','where','also','more','into','some','than','then','there','these','those','after','about','other','your','each','such','over','both','during','before','between','should','could','would','shall','must','being','having','making','taking','request','order','ensure','conduct','first','second','third','within','under','above','following','regard','subject','letter','dated','naval','headquarters','branch','navy','nigerian','officer','command','approval','international','assessment','assessments','establishment','establishments','infrastructure','environmental','management','conference','compliance','standardisation','production','presentation','inspection','invitation','attend','place','work','safety','report','executive','evaluation','annual','facilities','office','purchase','senior','retired','exercise','general','quarter','systems','standard','standards','equipment','items','funds','review','summary','activities','information','operations','random','hazards','joint','video','audit','ships','minute','action','forward','herewith','attached','copy','copies','reference','attention','necessary','required','submit','submitted','provide','provided','note','noted','seen','date','please','kindly','urgent','immediate','memo','signal','flag','issue','issued','direct','directed','follow','upon','into','back','down','from','been','done','made','take','came','come','went','went','come','goes','going','give','given','keep','kept','hold','held','show','shown','find','found','know','known','said','says','said','well','very','just','only','also','much','many','most','more','less','same','like','used','uses','need','needed','using','used','temporary','appointment','reappointment','posting','secondment','transfer','promotion','adm','radm','vadm','ltcdr','wocdr','sgncdr']);
+var _gStop=new Set(['that','this','with','from','have','will','been','were','they','their','which','when','what','where','also','more','into','some','than','then','there','these','those','after','about','other','your','each','such','over','both','during','before','between','should','could','would','shall','must','being','having','making','taking','request','order','ensure','conduct','first','second','third','within','under','above','following','regard','subject','letter','dated','naval','headquarters','branch','navy','nigerian','officer','command','approval','international','assessment','assessments','establishment','establishments','infrastructure','environmental','management','conference','compliance','standardisation','production','presentation','inspection','invitation','attend','place','work','safety','report','executive','evaluation','annual','facilities','office','purchase','senior','retired','exercise','general','quarter','systems','standard','standards','equipment','items','funds','review','summary','activities','information','operations','random','hazards','joint','video','audit','ships','minute','action','forward','herewith','attached','copy','copies','reference','attention','necessary','required','submit','submitted','provide','provided','note','noted','seen','date','please','kindly','urgent','immediate','memo','signal','flag','issue','issued','direct','directed','follow','upon','into','back','down','from','been','done','made','take','came','come','went','went','come','goes','going','give','given','keep','kept','hold','held','show','shown','find','found','know','known','said','says','said','well','very','just','only','also','much','many','most','more','less','same','like','used','uses','need','needed','using','used',]);
+
+// ── Compute IDF weights for terms across a set of filenames ──
+// idf[t] = log((N+1) / max(1, df[t])), floored at 0.1.
+// A term in every filename scores ~0.1 (generic); one in only 1 scores high (discriminating).
+function _computeIDF(terms,fnames){
+  var N=fnames.length;
+  var idf={};
+  terms.forEach(function(t){
+    var tw=typeof t==='object'?t.w:t;
+    var df=0;
+    fnames.forEach(function(fn){if(fn.toLowerCase().replace(/[^a-z0-9\s]/g,' ').includes(tw))df++;});
+    idf[tw]=Math.max(0.1,Math.log((N+1)/Math.max(1,df)));
+  });
+  return idf;
+}
 
 // ── Pick the N most distinctive words from a text ──
 // Returns [{w, acronym}] — acronym=true when word was uppercase in a mixed-case subject.
@@ -565,7 +601,7 @@ function _gDistinct(text,n){
 // Acronyms (uppercase in mixed-case text) get 2.5× weight.
 // Exact phrase match → 1.0 immediately.
 // Partial match: first 70% of term → 0.4× weight.
-function _gScore(subject,filename){
+function _gScore(subject,filename,idf){
   var terms=_gDistinct(subject,12);
   var fname=filename.toLowerCase().replace(/\.pdf$/i,'').replace(/[^a-z0-9\s]/g,' ');
   if(!terms.length)return 0;
@@ -575,7 +611,9 @@ function _gScore(subject,filename){
   var total=0,matched=0,missed=0;
   terms.forEach(function(t){
     var boost=t.acronym?2.5:1.0;
-    var wt=Math.max(1,t.w.length-2)*boost;
+    // IDF from candidate set (if provided) supersedes length heuristic
+    var termIdf=idf&&idf[t.w]!=null?idf[t.w]:Math.max(1,t.w.length-2);
+    var wt=termIdf*boost;
     total+=wt;
     if(fname.includes(t.w))matched+=wt;
     else missed+=wt;
@@ -633,9 +671,13 @@ async function _gsearch(subject, fileref){
     console.log('[Drive] No candidates found for:',subject.substring(0,60));
     return null;
   }
+  // Compute IDF from the candidate pool — generic terms (in many files) get low weight
+  var gTerms=_gDistinct(subject,12);
+  var cFnames=candidates.map(function(f){return f.name;});
+  var idf=_computeIDF(gTerms,cFnames);
   var best=null,bestScore=0,THRESHOLD=0.08;
   candidates.forEach(function(f){
-    var s=_gScore(subject,f.name);
+    var s=_gScore(subject,f.name,idf);
     if(s>bestScore){bestScore=s;best=f;}
   });
   console.log('[Drive] Candidates:',candidates.length,' Best:',best?best.name:'none',' Score:',bestScore.toFixed(3));
