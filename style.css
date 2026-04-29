@@ -261,7 +261,10 @@ td select{cursor:pointer}
 .ds-icon{font-size:22px;flex-shrink:0;width:30px;text-align:center}
 .ds-info{flex:1;min-width:0}
 .ds-name{font-size:13px;font-weight:600;color:var(--fg-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ds-meta{font-size:11px;color:var(--fg-faint);margin-top:3px}
+.ds-meta{font-size:11px;color:var(--fg-faint);margin-top:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.ds-type-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:0.04em;background:var(--bg-muted);color:var(--fg-subtle);border:1px solid var(--border-soft)}
+.ds-hl{background:rgba(200,164,0,0.28);color:var(--fg-ink);border-radius:2px;padding:0 2px;font-weight:700}
+body.dark .ds-hl{background:rgba(230,197,58,0.25);color:var(--fg-ink)}
 .ds-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
 .ds-preview-btn{background:none;border:1px solid var(--nass-navy-700);color:var(--nass-navy-700);padding:5px 12px;border-radius:var(--radius-sm);font-size:11px;font-weight:600;cursor:pointer;transition:background var(--ease-std),color var(--ease-std);white-space:nowrap;font-family:var(--font-sans)}
 .ds-preview-btn:hover{background:var(--nass-navy-700);color:var(--fg-on-navy)}

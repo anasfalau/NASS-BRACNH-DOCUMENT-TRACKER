@@ -34,9 +34,124 @@ function doSort(col){var ths=document.querySelectorAll('thead th');if(sortCol===
 function fillModalLists(){function pop(id,list){var el=document.getElementById(id);el.innerHTML='<option value="">— Select —</option>';list.forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o);});}pop('m-loc',locations);pop('m-off',officers);pop('m-act',actions);pop('m-stat',statuses);var dl=document.getElementById('fi-dl');dl.innerHTML='';fileIndex.forEach(function(v){var o=document.createElement('option');o.value=v;dl.appendChild(o);});}
 function setModalMode(mode){var fields=['m-ref','m-subject','m-loc','m-off','m-act','m-drcv','m-dmov','m-sla','m-due','m-stat','m-flag','m-rem'];var disabled=(mode==='view');fields.forEach(function(id){var el=document.getElementById(id);if(el)el.disabled=disabled;});document.getElementById('m-edit-btn').style.display=disabled?'':'none';document.getElementById('m-save-btn').style.display=disabled?'none':'';}function enableModalEdit(){setModalMode('edit');}function openModal(editIdx){if(!['editor','superuser'].includes(window.userRole||'viewer')){alert('Your account does not have permission to add or edit records.\n\nPlease contact the system administrator to upgrade your role.');return;}fillModalLists();var isEdit=(editIdx!=null);document.getElementById('m-idx').value=isEdit?editIdx:'';document.getElementById('mtitle').textContent=isEdit?'Edit Record':'Add New Record';if(isEdit){var r=rows[editIdx];document.getElementById('m-ref').value=r[1];document.getElementById('m-subject').value=r[2];document.getElementById('m-loc').value=r[3];document.getElementById('m-off').value=r[4];document.getElementById('m-act').value=r[5];document.getElementById('m-drcv').value=r[6];document.getElementById('m-dmov').value=r[7];document.getElementById('m-sla').value=r[8];document.getElementById('m-due').value=r[9];document.getElementById('m-stat').value=r[10];document.getElementById('m-flag').value=computeFlag(r);document.getElementById('m-rem').value=r[12];setModalMode('edit');}else{['m-ref','m-subject','m-sla','m-rem'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('m-drcv').value=new Date().toISOString().slice(0,10);document.getElementById('m-dmov').value='';document.getElementById('m-due').value='';document.getElementById('m-stat').value='Active';document.getElementById('m-flag').value='ON TIME';document.getElementById('m-loc').value='';document.getElementById('m-off').value='';document.getElementById('m-act').value='';setModalMode('edit');}document.getElementById('mbg').classList.add('open');}
 function closeModal(){document.getElementById('mbg').classList.remove('open');}
-function driveSearch(){var q=(document.getElementById('ds-input').value||'').trim();if(!q)return;var res=document.getElementById('ds-results');res.innerHTML='<div class="ds-loading"><span class="ds-spinner"></span>Searching Google Drive\u2026</div>';_gwithToken(async function(){try{var encoded=encodeURIComponent("fullText contains '"+q.replace(/'/g,"\\'")+"' and trashed=false");var url='https://www.googleapis.com/drive/v3/files?q='+encoded+'&fields=files(id,name,mimeType,modifiedTime,webViewLink)&pageSize=40&orderBy=modifiedTime+desc&supportsAllDrives=true&includeItemsFromAllDrives=true';var r=await fetch(url,{headers:{'Authorization':'Bearer '+_gTok}});var d=await r.json();var files=d.files||[];if(!files.length){res.innerHTML='<div class="ds-empty-state">No documents found for \u201c'+_esc(q)+'\u201d.</div>';return;}res.innerHTML='<div class="ds-count">'+files.length+' result'+(files.length===1?'':'s')+' for \u201c'+_esc(q)+'\u201d</div>'+files.map(function(f){var icon=_dsIcon(f.mimeType);var date=f.modifiedTime?new Date(f.modifiedTime).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';var isPdf=f.mimeType==='application/pdf';return'<div class="ds-item"><span class="ds-icon">'+icon+'</span><div class="ds-info"><div class="ds-name">'+_esc(f.name)+'</div><div class="ds-meta">Modified '+date+'</div></div><div class="ds-actions">'+(isPdf?'<button class="ds-preview-btn" onclick="dsPreview(\''+f.id.replace(/'/g,'')+"','"+f.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;')+"','"+f.webViewLink.replace(/'/g,'')+"')\">\u25b6 Preview</button>":"")+'<a class="ds-open-btn" href="'+f.webViewLink+'" target="_blank">Open in Drive</a></div></div>';}).join('');}catch(e){res.innerHTML='<div class="ds-empty-state" style="color:#c0392b">Search failed: '+_esc(e.message)+'</div>';console.error('[DriveSearch]',e);}});}
+/* ================================================================
+   DRIVE SEARCH — public entry point
+   ================================================================ */
+function driveSearch(){
+  var q=(document.getElementById('ds-input').value||'').trim();
+  if(!q)return;
+  var resEl=document.getElementById('ds-results');
+  resEl.innerHTML='<div class="ds-loading"><span class="ds-spinner"></span>Searching Google Drive\u2026</div>';
+  _gwithToken(async function(){
+    try{
+      var files=await _dsMultiQuery(q);
+      if(!files.length){resEl.innerHTML='<div class="ds-empty-state">No documents found for \u201c'+_esc(q)+'\u201d.</div>';return;}
+      // Score and rank by relevance to query
+      var scored=files.map(function(f){return{f:f,score:_dsRelevance(q,f.name,f.mimeType)};});
+      scored.sort(function(a,b){return b.score-a.score;});
+      resEl.innerHTML='<div class="ds-count">'+scored.length+' result'+(scored.length===1?'':'s')+' for \u201c'+_esc(q)+'\u201d</div>'+
+        scored.map(function(item){
+          var f=item.f;
+          var icon=_dsIcon(f.mimeType);
+          var date=f.modifiedTime?new Date(f.modifiedTime).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
+          var isPdf=f.mimeType==='application/pdf';
+          var sz=f.size?_dsFmtSize(+f.size):'';
+          var typeLabel=_dsMimeLabel(f.mimeType);
+          var safeName=f.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+          var safeLink=f.webViewLink.replace(/'/g,'');
+          return'<div class="ds-item">'+
+            '<span class="ds-icon">'+icon+'</span>'+
+            '<div class="ds-info">'+
+              '<div class="ds-name">'+_dsHighlight(_esc(f.name),q)+'</div>'+
+              '<div class="ds-meta">'+date+(sz?' \u00b7 '+sz:'')+' \u00b7 <span class="ds-type-badge">'+typeLabel+'</span></div>'+
+            '</div>'+
+            '<div class="ds-actions">'+
+              (isPdf?'<button class="ds-preview-btn" onclick="dsPreview(\''+f.id+'\',\''+safeName+'\',\''+safeLink+'\')">\u25b6 Preview</button>':'')+
+              '<a class="ds-open-btn" href="'+f.webViewLink+'" target="_blank">Open in Drive</a>'+
+            '</div>'+
+          '</div>';
+        }).join('');
+    }catch(e){resEl.innerHTML='<div class="ds-empty-state" style="color:#c0392b">Search failed: '+_esc(e.message)+'</div>';console.error('[DriveSearch]',e);}
+  });
+}
+
+/* ── Multi-strategy parallel query ─────────────────────────────── */
+async function _dsMultiQuery(q){
+  var seen=new Map();
+  var add=function(files){(files||[]).forEach(function(f){if(!seen.has(f.id))seen.set(f.id,f);});};
+  var flds='files(id,name,mimeType,modifiedTime,webViewLink,size)';
+  var tail='&fields='+flds+'&pageSize=30&supportsAllDrives=true&includeItemsFromAllDrives=true';
+  var hdr={'Authorization':'Bearer '+_gTok};
+  var qc=q.replace(/'/g,'');
+
+  // Tokenise: extract meaningful terms (min 3 chars, not stop-words)
+  var terms=_dsTerms(q);
+
+  // Build query set — phrase match + individual terms (up to 4), all trashed=false
+  var queries=["fullText contains '"+qc+"' and trashed=false",
+               "name contains '"+qc+"' and trashed=false"];
+  terms.slice(0,4).forEach(function(t){
+    if(t!==qc.toLowerCase())queries.push("fullText contains '"+t+"' and trashed=false");
+  });
+
+  // Fire all in parallel
+  var results=await Promise.all(queries.map(function(query){
+    return fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(query)+tail+'&orderBy=modifiedTime+desc',{headers:hdr})
+      .then(function(r){return r.json();}).then(function(d){return d.files||[];}).catch(function(){return[];});
+  }));
+  results.forEach(add);
+  return Array.from(seen.values());
+}
+
+/* ── Extract meaningful terms from a free-text query ───────────── */
+function _dsTerms(q){
+  // Extract quoted phrases first
+  var phrases=[];
+  q.replace(/"([^"]+)"/g,function(_,p){phrases.push(p.toLowerCase().trim());});
+  var base=q.replace(/"[^"]*"/g,' ').toLowerCase().replace(/[^a-z0-9\s]/g,' ');
+  var words=base.split(/\s+/).filter(function(w){return w.length>=3&&!_gStop.has(w);});
+  return phrases.concat(words).filter(function(w,i,a){return a.indexOf(w)===i;});
+}
+
+/* ── Relevance score (0–1) of a filename to a query ────────────── */
+function _dsRelevance(q,filename,mime){
+  var fname=filename.toLowerCase().replace(/\.[a-z]{2,5}$/i,'').replace(/[^a-z0-9\s]/g,' ');
+  var terms=_dsTerms(q);
+  if(!terms.length)return 0;
+  var qNorm=q.toLowerCase().replace(/[^a-z0-9\s]/g,' ').trim();
+  // Exact phrase → perfect score
+  if(fname.includes(qNorm))return 1.0;
+  // Weighted term overlap: longer terms are worth more
+  var total=0,matched=0;
+  terms.forEach(function(t){
+    var w=Math.max(1,t.length-2); // weight by term length
+    total+=w;
+    if(fname.includes(t))matched+=w;
+    else if(t.length>=6&&fname.includes(t.slice(0,Math.ceil(t.length*0.7))))matched+=w*0.35;
+  });
+  var base=total>0?matched/total:0;
+  // Small boost for PDFs (most useful for this app)
+  if(mime==='application/pdf')base=Math.min(1,base+0.05);
+  return base;
+}
+
+/* ── Highlight matched terms in the file name ───────────────────── */
+function _dsHighlight(escaped,q){
+  var terms=_dsTerms(q);
+  var out=escaped;
+  terms.slice(0,5).forEach(function(t){
+    if(t.length<3)return;
+    var re=new RegExp('('+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+    out=out.replace(re,'<mark class="ds-hl">$1</mark>');
+  });
+  return out;
+}
+
+/* ── Helpers ────────────────────────────────────────────────────── */
 function _dsIcon(mime){if(mime==='application/pdf')return'\uD83D\uDCC4';if(mime.includes('spreadsheet')||mime.includes('excel'))return'\uD83D\uDCCA';if(mime.includes('document')||mime.includes('word'))return'\uD83D\uDCDD';if(mime.includes('presentation')||mime.includes('powerpoint'))return'\uD83D\uDCCB';if(mime.includes('image'))return'\uD83D\uDDBC\uFE0F';if(mime.includes('folder'))return'\uD83D\uDCC1';return'\uD83D\uDCCE';}
-function dsPreview(id,name,link){document.getElementById('ds-pdf-title').textContent=name;document.getElementById('ds-pdf-open').href=link||('#');document.getElementById('ds-pdf-frame').src='https://drive.google.com/file/d/'+id+'/preview';document.getElementById('ds-pdf-bg').classList.add('open');}
+function _dsMimeLabel(mime){if(mime==='application/pdf')return'PDF';if(mime.includes('spreadsheet')||mime.includes('excel'))return'Spreadsheet';if(mime.includes('document')||mime.includes('word'))return'Document';if(mime.includes('presentation')||mime.includes('powerpoint'))return'Presentation';if(mime.includes('image'))return'Image';if(mime.includes('folder'))return'Folder';return'File';}
+function _dsFmtSize(b){if(b<1024)return b+'B';if(b<1048576)return Math.round(b/1024)+'KB';return(b/1048576).toFixed(1)+'MB';}
+function dsPreview(id,name,link){document.getElementById('ds-pdf-title').textContent=name;document.getElementById('ds-pdf-open').href=link||'#';document.getElementById('ds-pdf-frame').src='https://drive.google.com/file/d/'+id+'/preview';document.getElementById('ds-pdf-bg').classList.add('open');}
 var currentDetailIdx=null;function openDetail(idx){var r=rows[idx];currentDetailIdx=idx;document.getElementById('d-ref').textContent=r[1]||'—';var _dsub=document.getElementById('d-subject');_dsub.textContent=r[2]||'—';_dsub.removeAttribute('href');_dsub.classList.remove('detail-subject-linked');document.getElementById('d-serial').textContent=(getFiltered().indexOf(r)+1)+'.';document.getElementById('d-off').textContent=r[4]||'—';document.getElementById('d-loc').textContent=r[3]||'—';document.getElementById('d-act').textContent=r[5]||'—';document.getElementById('d-drcv').textContent=fmtDate(r[6])||'—';document.getElementById('d-dmov').textContent=fmtDate(r[7])||'—';document.getElementById('d-due').textContent=fmtDate(r[9])||'—';document.getElementById('d-sla').textContent=r[8]||'—';document.getElementById('d-rem').textContent=r[12]||'—';var st=r[10]||'';var dsSt=document.getElementById('d-status');dsSt.textContent=st;dsSt.className='detail-status '+(st==='Active'?'ds-active':st==='Completed'?'ds-completed':st==='On Hold'?'ds-hold':st==='Cancelled'?'ds-cancelled':st==='Filed'?'ds-filed':'');var fl=computeFlag(r)||r[11]||'';var dsFl=document.getElementById('d-flag');dsFl.textContent=fl;dsFl.className='detail-flag '+(fl==='OVERDUE'?'df-overdue':fl==='ON TIME'?'df-ontime':'');var auditBy=document.getElementById('d-updated-by');if(auditBy)auditBy.textContent=r[13]||'—';var auditAt=document.getElementById('d-updated-at');if(auditAt){var ad=r[14]?new Date(r[14]):null;auditAt.textContent=ad?ad.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';}document.getElementById('detail-mbg').classList.add('open');gdriveSearchForRecord(r[2],r[1]);loadRecordHistory(idx);}
 function saveModal(){if(!['editor','superuser'].includes(window.userRole||'viewer'))return;var r=['',document.getElementById('m-ref').value.trim(),document.getElementById('m-subject').value.trim(),document.getElementById('m-loc').value,document.getElementById('m-off').value,document.getElementById('m-act').value,document.getElementById('m-drcv').value,document.getElementById('m-dmov').value,document.getElementById('m-sla').value.trim(),document.getElementById('m-due').value,document.getElementById('m-stat').value,'',document.getElementById('m-rem').value.trim()];if(!r[9]){var auto=calcDueDate(r[7],r[8]);if(auto)r[9]=auto;}r[11]=computeFlag(r);var _newRef=(r[1]||'').trim().toLowerCase();if(_newRef){var _ei2=document.getElementById('m-idx').value!==''?parseInt(document.getElementById('m-idx').value):-1;var _dupIdx=rows.findIndex(function(row,_i){return _i!==_ei2&&(row[1]||'').trim().toLowerCase()===_newRef;});if(_dupIdx>=0&&!confirm('⚠ File Ref "'+r[1]+'" already exists at serial #'+(_dupIdx+1)+'.\n\nSave as a new entry anyway?'))return;}var idx=document.getElementById('m-idx').value;if(idx!=='')rows[parseInt(idx)]=r;else rows.push(r);saveData();closeModal();refresh();showToast('Record saved successfully.','success');}
 var _fiPage=0;function renderAdmin(){function draw(list,cid){var el=document.getElementById(cid);el.innerHTML='';list.forEach(function(item,i){var t=document.createElement('span');t.className='tag';t.textContent=item+' ';var x=document.createElement('button');x.className='tx';x.textContent='×';x.addEventListener('click',(function(idx){return function(){if(confirm('Remove "'+list[idx]+'"?')){list.splice(idx,1);renderAdmin();refresh();}};})(i));t.appendChild(x);el.appendChild(t);});}draw(officers,'at-officers');(function(){var FP=10;var e2=document.getElementById('at-fileIndex');e2.innerHTML='';var st=_fiPage*FP;fileIndex.slice(st,st+FP).forEach(function(item,pi){var ri=st+pi;var t=document.createElement('span');t.className='tag';t.textContent=item+' ';var x=document.createElement('button');x.className='tx';x.textContent='×';x.addEventListener('click',(function(idx){return function(){if(confirm('Remove "'+fileIndex[idx]+'"?')){fileIndex.splice(idx,1);if(_fiPage>0&&_fiPage*FP>=fileIndex.length)_fiPage--;renderAdmin();refresh();}};})(ri));t.appendChild(x);e2.appendChild(t);});var tp=Math.ceil(fileIndex.length/FP);if(tp>1){var pc=document.createElement('div');pc.className='fi-pg';var prevDis=(_fiPage===0)?'disabled':'';var nextDis=(_fiPage>=tp-1)?'disabled':'';pc.innerHTML='<button class="fi-pgb" '+prevDis+' onclick="_fiPage--;renderAdmin()">‹</button>'+'<span class="fi-pgn">'+(_fiPage+1)+' / '+tp+'</span>'+'<button class="fi-pgb" '+nextDis+' onclick="_fiPage++;renderAdmin()">›</button>';e2.appendChild(pc);}})();draw(statuses,'at-statuses');draw(locations,'at-locations');draw(actions,'at-actions');}
@@ -421,7 +536,7 @@ function _gwithToken(cb){
 }
 
 // ── Stop words to ignore when picking search terms ──
-var _gStop=new Set(['that','this','with','from','have','will','been','were','they','their','which','when','what','where','also','more','into','some','than','then','there','these','those','after','about','other','your','each','such','over','both','during','before','between','should','could','would','shall','must','being','having','making','taking','request','order','ensure','conduct','first','second','third','within','under','above','following','regard','subject','letter','dated','naval','headquarters','branch','navy','nigerian','officer','command','approval','international','assessment','assessments','establishment','establishments','infrastructure','environmental','management','conference','compliance','standardisation','production','presentation','inspection','invitation','attend','place','work','safety','report','executive','evaluation','annual','facilities','office','purchase','senior','retired','exercise','general','quarter','systems','standard','standards','equipment','items','funds','review','summary','activities','information','operations','random','hazards','joint','video','audit','ships']);
+var _gStop=new Set(['that','this','with','from','have','will','been','were','they','their','which','when','what','where','also','more','into','some','than','then','there','these','those','after','about','other','your','each','such','over','both','during','before','between','should','could','would','shall','must','being','having','making','taking','request','order','ensure','conduct','first','second','third','within','under','above','following','regard','subject','letter','dated','naval','headquarters','branch','navy','nigerian','officer','command','approval','international','assessment','assessments','establishment','establishments','infrastructure','environmental','management','conference','compliance','standardisation','production','presentation','inspection','invitation','attend','place','work','safety','report','executive','evaluation','annual','facilities','office','purchase','senior','retired','exercise','general','quarter','systems','standard','standards','equipment','items','funds','review','summary','activities','information','operations','random','hazards','joint','video','audit','ships','minute','action','forward','herewith','attached','copy','copies','reference','attention','necessary','required','submit','submitted','provide','provided','note','noted','seen','date','please','kindly','urgent','immediate','memo','signal','flag','issue','issued','direct','directed','follow','upon','into','back','down','from','been','done','made','take','came','come','went','went','come','goes','going','give','given','keep','kept','hold','held','show','shown','find','found','know','known','said','says','said','well','very','just','only','also','much','many','most','more','less','same','like','used','uses','need','needed','using','used']);
 
 // ── Pick the N most distinctive words from a text ──
 // Returns [{w, acronym}] — acronym=true when word was uppercase in a mixed-case subject.
@@ -445,52 +560,55 @@ function _gDistinct(text,n){
   return words.slice(0,n);
 }
 
-// ── Score a filename against a subject (0–1) ──
-// True acronyms (uppercase in mixed-case text) get 2.5x weight bonus — highly specific.
+// ── Score a PDF filename against a record subject (0–1) ──
+// Acronyms (uppercase in mixed-case text) get 2.5× weight.
+// Exact phrase match → 1.0 immediately.
+// Partial match: first 70% of term → 0.4× weight.
 function _gScore(subject,filename){
-  var terms=_gDistinct(subject,10);
+  var terms=_gDistinct(subject,12);
   var fname=filename.toLowerCase().replace(/\.pdf$/i,'').replace(/[^a-z0-9\s]/g,' ');
   if(!terms.length)return 0;
+  // Exact phrase bonus
+  var subNorm=subject.toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+  if(fname.includes(subNorm.slice(0,30)))return 1.0;
   var score=0,maxPossible=0;
   terms.forEach(function(t){
     var boost=t.acronym?2.5:1.0;
-    var wt=t.w.length*boost;
+    var wt=Math.max(1,t.w.length-2)*boost; // length-weighted, min 1
     maxPossible+=wt;
     if(fname.includes(t.w))score+=wt;
-    else if(fname.includes(t.w.slice(0,5)))score+=wt*0.4;
+    else{
+      var partial=t.w.slice(0,Math.max(4,Math.ceil(t.w.length*0.7)));
+      if(fname.includes(partial))score+=wt*0.4;
+    }
   });
   return maxPossible>0?score/maxPossible:0;
 }
 
-// ── Fetch candidates from Drive using targeted keyword queries ──
-async function _gCandidates(subject, fileref){
-  var subjectWords=_gDistinct(subject,3).map(function(t){return t.w;}); // extract .w from {w,acronym} objects
-  // also pull any alphanumeric chunk from the file ref (e.g. "020278", "291537")
-  var refChunks=(fileref||'').match(/[A-Z0-9]{4,}/gi)||[];
-  refChunks=refChunks.slice(0,2).map(function(s){return s.toLowerCase();});
-
-  var queries=subjectWords.concat(refChunks).slice(0,4);
-  if(!queries.length)return[];
-
-  console.log('[Drive] Querying with terms:',queries);
+// ── Fetch PDF candidates — parallel fullText + name queries, 5 terms ──
+async function _gCandidates(subject,fileref){
+  var subjectWords=_gDistinct(subject,5).map(function(t){return t.w;});
+  // Pull alphanumeric chunks from file ref (handles "NHQ:020/278/25/VOL.I" etc.)
+  var refChunks=((fileref||'').match(/[A-Z0-9]{4,}/gi)||[]).slice(0,3).map(function(s){return s.toLowerCase();});
+  var terms=subjectWords.concat(refChunks).filter(function(w,i,a){return a.indexOf(w)===i;}).slice(0,6);
+  if(!terms.length)return[];
+  console.log('[Drive] Querying with terms:',terms);
   var seen=new Map();
-  for(var i=0;i<queries.length;i++){
-    var kw=queries[i].replace(/'/g,'');
-    // Search the whole accessible drive with fullText (recursive, finds PDFs in subfolders)
-    // Folder constraint dropped because PDFs live in subfolders, not directly in parent
-    var qFull="mimeType='application/pdf' and trashed=false and fullText contains '"+kw+"'";
-    var qName="mimeType='application/pdf' and trashed=false and name contains '"+kw+"'";
-    try{
-      for(var qi=0;qi<2;qi++){
-        var q2=qi===0?qFull:qName;
-        var res=await fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q2)+'&fields=files(id,name,webViewLink)&pageSize=20&supportsAllDrives=true&includeItemsFromAllDrives=true',{headers:{'Authorization':'Bearer '+_gTok}});
-        if(res.status===401){_gTok=null;return null;}
-        var d=await res.json();
-        (d.files||[]).forEach(function(f){seen.set(f.id,f);});
-        if(seen.size>0)break; // fullText found results, skip name query
-      }
-    }catch(e){console.warn('[Drive] Query error:',e);}
-  }
+  var tail='&fields=files(id,name,webViewLink)&pageSize=20&supportsAllDrives=true&includeItemsFromAllDrives=true';
+  var hdr={'Authorization':'Bearer '+_gTok};
+  // Build fullText + name query pair per term and fire all in parallel
+  var allQ=[];
+  terms.forEach(function(kw){
+    var k=kw.replace(/'/g,'');
+    allQ.push("mimeType='application/pdf' and trashed=false and fullText contains '"+k+"'");
+    allQ.push("mimeType='application/pdf' and trashed=false and name contains '"+k+"'");
+  });
+  var results=await Promise.all(allQ.map(function(q){
+    return fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+tail,{headers:hdr})
+      .then(function(r){if(r.status===401){_gTok=null;return{files:[]};}return r.json();})
+      .then(function(d){return d.files||[];}).catch(function(){return[];});
+  }));
+  results.forEach(function(files){files.forEach(function(f){if(!seen.has(f.id))seen.set(f.id,f);});});
   return Array.from(seen.values());
 }
 
