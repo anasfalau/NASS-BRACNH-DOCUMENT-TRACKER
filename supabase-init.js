@@ -125,9 +125,12 @@ var rowIds = [];
   // so every new token is automatically saved (tokens last ~1 hour).
   initGoogleTokenPersistence();
 
-  // Re-sync when the user returns to this browser tab
+  // Re-sync when the user returns to this browser tab (throttled to 30 s)
+  let _lastVisibilityPull = 0;
   document.addEventListener('visibilitychange', async function () {
     if (document.visibilityState !== 'visible') return;
+    if (Date.now() - _lastVisibilityPull < 30000) return;
+    _lastVisibilityPull = Date.now();
     await pullData(sb);
     if (typeof loadData === 'function') loadData();
     if (!isModalOpen() && typeof refresh === 'function') refresh();
@@ -148,6 +151,9 @@ var rowIds = [];
 
 })();
 
+// Tracks UUIDs removed locally so pushData can DELETE them without an extra SELECT.
+var _nassDeletedIds = new Set();
+
 // ── Proxy helper ────────────────────────────────────────────────
 function applyRowsProxy() {
   rows = new Proxy(rows, {
@@ -161,7 +167,8 @@ function applyRowsProxy() {
       }
       if (prop === 'splice') {
         return function (start, deleteCount, ...items) {
-          rowIds.splice(start, deleteCount, ...new Array(items.length).fill(null));
+          const removed = rowIds.splice(start, deleteCount, ...new Array(items.length).fill(null));
+          removed.forEach(id => { if (id) _nassDeletedIds.add(id); });
           localStorage.setItem('nassRowIds', JSON.stringify(rowIds));
           return Array.prototype.splice.call(target, start, deleteCount, ...items);
         };
@@ -187,10 +194,11 @@ function isModalOpen() {
 // into localStorage. On first run (empty table), migrates from the
 // old nass_settings blob automatically.
 async function pullData(sb) {
-  const { data: records, error: recErr } = await sb
-    .from('nass_records')
-    .select('*')
-    .order('sort_order', { ascending: true });
+  // Run both fetches in parallel — independent queries
+  const [{ data: records, error: recErr }, { data: settings }] = await Promise.all([
+    sb.from('nass_records').select('*').order('sort_order', { ascending: true }),
+    sb.from('nass_settings').select('key, value')
+  ]);
 
   if (recErr) {
     console.error('[NASS] Pull error:', recErr.message);
@@ -218,10 +226,6 @@ async function pullData(sb) {
     await migrateFromSettings(sb);
   }
 
-  // Fetch config lists
-  const { data: settings } = await sb
-    .from('nass_settings')
-    .select('key, value');
   (settings || [])
     .filter(({ key }) => CONFIG_KEYS.includes(key))
     .forEach(({ key, value }) => localStorage.setItem(key, JSON.stringify(value)));
@@ -331,13 +335,13 @@ async function pushData(sb) {
   // Save updated rowIds (with newly assigned UUIDs)
   localStorage.setItem('nassRowIds', JSON.stringify(rowIds));
 
-  // DELETE orphaned records (rows deleted locally but still in DB)
-  const liveIds = new Set(rowIds.filter(Boolean));
-  const { data: allRecs } = await sb.from('nass_records').select('id');
-  const orphans = (allRecs || []).map(r => r.id).filter(id => !liveIds.has(id));
-  if (orphans.length) {
-    const { error: delErr } = await sb.from('nass_records').delete().in('id', orphans);
+  // DELETE records removed locally — IDs were captured in the rows proxy splice,
+  // so no extra SELECT round-trip is needed.
+  if (_nassDeletedIds.size) {
+    const toDelete = [..._nassDeletedIds];
+    const { error: delErr } = await sb.from('nass_records').delete().in('id', toDelete);
     if (delErr) console.error('[NASS] Delete error:', delErr.message);
+    else _nassDeletedIds.clear();
   }
 
   // Push config lists to nass_settings
@@ -382,7 +386,7 @@ function initGoogleTokenPersistence() {
       localStorage.setItem(EXPIRY_KEY, (Date.now() + 55 * 60 * 1000).toString());
       console.log('[Drive] New token saved to storage');
     }
-  }, 3000);
+  }, 30000); // 30 s — tokens only change on OAuth prompt, no need to check faster
 }
 
 // ── Force-password-change modal ─────────────────────────────────
@@ -475,10 +479,13 @@ function nassLogout() {
 function show(id) { const el = document.getElementById(id); if (el) el.style.display = 'flex'; }
 function hide(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
 
+// Version string matched to the SW cache name — lets the service worker serve
+// app.js from cache instead of bypassing it with a unique timestamp every load.
+const _APP_VER = 'v17';
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     const s   = document.createElement('script');
-    s.src     = src + '?_=' + Date.now();
+    s.src     = src + '?v=' + _APP_VER;
     s.onload  = resolve;
     s.onerror = () => reject(new Error('Failed to load ' + src));
     document.body.appendChild(s);

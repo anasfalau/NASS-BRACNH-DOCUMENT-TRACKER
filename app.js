@@ -288,6 +288,9 @@ function exportCSV(){var h=['#','Serial','File Ref No.','Subject','Current Locat
 
 // ── Inbox ──────────────────────────────────────────────────────────
 var _inboxLastSeen=null,_inboxDocs=[],_inboxPage=0,_inboxPPG=10,_inboxFilter=null;
+// Cached officer names for this user — avoids a duplicate DB query between loadInbox and checkInboxUnread
+var _myOfficersCache=null;
+async function _getMyOfficers(uid){if(_myOfficersCache)return _myOfficersCache;var mRes=await window._sb.from('nass_officer_mappings').select('officer_name').eq('user_id',uid);if(mRes.error)throw mRes.error;_myOfficersCache=(mRes.data||[]).map(function(m){return m.officer_name;});return _myOfficersCache;}
 async function loadInbox(){
   var el=document.getElementById('inbox-list');
   var sub=document.getElementById('inbox-sub');
@@ -295,9 +298,7 @@ async function loadInbox(){
   el.innerHTML='<div class="gm-loading">Loading…</div>';
   try{
     var uid=(window.userSession&&window.userSession.user&&window.userSession.user.id)||'';
-    var mRes=await window._sb.from('nass_officer_mappings').select('officer_name').eq('user_id',uid);
-    if(mRes.error)throw mRes.error;
-    var myOfficers=(mRes.data||[]).map(function(m){return m.officer_name;});
+    var myOfficers=await _getMyOfficers(uid);
     if(!myOfficers.length){
       el.innerHTML='<div class="gm-empty">No officer mapping found.<br><small>Ask your admin to map your account to an officer name.</small></div>';
       if(sub)sub.textContent='No officer assigned to your account';
@@ -423,9 +424,8 @@ async function checkInboxUnread(){
   try{
     var uid=(window.userSession&&window.userSession.user&&window.userSession.user.id)||'';
     if(!uid)return;
-    var mRes=await window._sb.from('nass_officer_mappings').select('officer_name').eq('user_id',uid);
-    if(mRes.error||!mRes.data||!mRes.data.length)return;
-    var myOfficers=mRes.data.map(function(m){return m.officer_name;});
+    var myOfficers=await _getMyOfficers(uid);
+    if(!myOfficers.length)return;
     var seenRes=await window._sb.from('nass_inbox_seen').select('last_seen_at').eq('user_id',uid).maybeSingle();
     var lastSeen=seenRes.data?new Date(seenRes.data.last_seen_at):new Date(0);
     var rRes=await window._sb.from('nass_records').select('id,updated_at,created_at').in('officer',myOfficers).gt('updated_at',lastSeen.toISOString());
@@ -499,7 +499,7 @@ async function saveMappings(){
   try{
     if(toUpsert.length)await window._sb.from('nass_officer_mappings').upsert(toUpsert,{onConflict:'officer_name'});
     if(toDelete.length)await window._sb.from('nass_officer_mappings').delete().in('officer_name',toDelete);
-    _mappings=toUpsert;
+    _mappings=toUpsert;_myOfficersCache=null;
     showToast('Mappings saved successfully.','success');
     await loadMappings();
   }catch(e){
