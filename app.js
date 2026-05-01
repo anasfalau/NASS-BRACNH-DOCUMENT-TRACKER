@@ -88,7 +88,9 @@ function _dsRenderResults(files,q,folderLabel){
       '<div class="ds-actions"><a class="ds-open-btn" href="'+_esc(f.webViewLink||'')+'" target="_blank" onclick="event.stopPropagation()">Open</a></div></div>';
   }).join('');
 }
+var _dsRot=0;
 function _dsOpenPreview(id,name,mimeType,webViewLink){
+  _dsRot=0;
   var panel=document.getElementById('ds-preview-panel');if(!panel)return;
   document.querySelectorAll('#ds-results .ds-item').forEach(function(el){el.classList.remove('ds-item-active');});
   var active=document.getElementById('dsi-'+id);if(active)active.classList.add('ds-item-active');
@@ -103,13 +105,27 @@ function _dsOpenPreview(id,name,mimeType,webViewLink){
     previewUrl='https://drive.google.com/file/d/'+id+'/preview';
   }
   var isPreviewable=mimeType!=='application/vnd.google-apps.folder';
+  var dlUrl='https://drive.google.com/uc?export=download&id='+id;
   panel.innerHTML='<div class="ds-preview-bar">'+
     '<span class="ds-preview-title">'+_esc(name)+'</span>'+
-    '<a href="'+_esc(webViewLink)+'" target="_blank" class="pdf-open-link" style="margin-left:8px">Open in Drive ↗</a>'+
+    '<div class="pdf-panel-actions">'+
+      '<button class="pdf-rot-btn" onclick="_dsRotate(-90)" title="Rotate left">↺</button>'+
+      '<button class="pdf-rot-btn" onclick="_dsRotate(90)" title="Rotate right">↻</button>'+
+      '<a href="'+dlUrl+'" target="_blank" download class="pdf-rot-btn" title="Download" style="text-decoration:none;display:flex;align-items:center;justify-content:center;font-size:15px">⤓</a>'+
+      '<a href="'+_esc(webViewLink)+'" target="_blank" class="pdf-open-link" style="margin-left:6px">Open ↗</a>'+
+    '</div>'+
   '</div>'+
   (isPreviewable
-    ?'<iframe id="ds-iframe" src="'+previewUrl+'" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>'
+    ?'<div id="ds-iframe-wrap" style="flex:1;overflow:auto;position:relative;min-height:0"><iframe id="ds-iframe" src="'+previewUrl+'" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-popups" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;transform-origin:center center"></iframe></div>'
     :'<div class="ds-preview-placeholder" style="flex:1"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg><div>Preview not available for this file type.</div><a href="'+_esc(webViewLink||'')+'" target="_blank" class="btn btn-navy" style="font-size:12px;padding:8px 18px">Open in Drive</a></div>');
+}
+function _dsRotate(delta){
+  _dsRot=(_dsRot+delta+360)%360;
+  var frame=document.getElementById('ds-iframe');
+  if(!frame)return;
+  frame.style.transform='rotate('+_dsRot+'deg)';
+  if(_dsRot===90||_dsRot===270){frame.style.width=frame.parentElement.offsetHeight+'px';frame.style.height=frame.parentElement.offsetWidth+'px';frame.style.position='relative';frame.style.top=((frame.parentElement.offsetHeight-frame.parentElement.offsetWidth)/2)+'px';frame.style.left=((frame.parentElement.offsetWidth-frame.parentElement.offsetHeight)/2)+'px';}
+  else{frame.style.width='100%';frame.style.height='100%';frame.style.position='absolute';frame.style.top='0';frame.style.left='0';}
 }
 function _dsBrowseFolder(folderId,folderName){
   var resEl=document.getElementById('ds-results');
