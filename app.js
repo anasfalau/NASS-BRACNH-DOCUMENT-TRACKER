@@ -1075,6 +1075,24 @@ function _mlEditDraft(mailId){
   openMailCompose({draftId:m.id,subject:m.subject,body:m.body});
 }
 
+function _mlSubscribeRealtime(sb){
+  if(!sb||!window.userSession)return;
+  var uid=window.userSession.user.id;
+  sb.channel('nass_mail_inbox_'+uid)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'nass_mail_recipients',filter:'recipient_id=eq.'+uid},function(payload){
+      var nr=payload.new;
+      _mlLoadBadges();
+      if(_inboxMode!=='mail'||_mlFolder!=='inbox')return;
+      sb.from('nass_mail').select('id,subject,body,is_draft,created_at,sender_id,parent_id').eq('id',nr.mail_id).eq('is_draft',false).maybeSingle().then(function(res){
+        if(!res.data)return;
+        var already=_mlList.find(function(x){return x.id===res.data.id;});
+        if(already)return;
+        var m=Object.assign({},res.data,{_read:false,_recip_row_id:nr.id,_recip_type:nr.type});
+        _mlList.unshift(m);_mlRenderList();
+      });
+    })
+    .subscribe();
+}
 function _mlLoadBadges(){
   if(!window._sb||!window.userSession)return;
   var uid=window.userSession.user.id;
@@ -1153,7 +1171,11 @@ function _mlSend(){
     var rows=toIds.map(function(id){return{mail_id:mid,recipient_id:id,type:'to'};});
     ccIds.forEach(function(id){rows.push({mail_id:mid,recipient_id:id,type:'cc'});});
     window._sb.from('nass_mail_recipients').upsert(rows,{onConflict:'mail_id,recipient_id'}).then(function(){
-      showToast('Message sent.','ok');_mlCloseCompose();if(_mlFolder==='sent')loadMail();else _mlLoadBadges();
+      showToast('Message sent.','ok');_mlCloseCompose();
+      if(_inboxMode==='mail'&&_mlFolder==='sent'){
+        var sent=Object.assign({},mailData,{id:mid,_to_ids:toIds,created_at:new Date().toISOString()});
+        _mlList.unshift(sent);_mlRenderList();
+      } else {_mlLoadBadges();}
     });
   });
 }

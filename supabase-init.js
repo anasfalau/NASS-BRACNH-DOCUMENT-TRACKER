@@ -65,6 +65,7 @@ var rowIds = [];
   // chat.js is lazy-loaded on first FAB click — see _nassAiLaunch in index.html
   if (typeof window.nassShowFab === 'function') window.nassShowFab();
   if (typeof applyRolePermissions === 'function') applyRolePermissions();
+  if (typeof _mlSubscribeRealtime === 'function') _mlSubscribeRealtime(sb);
 
   // Sync rowIds with current rows
   rowIds = JSON.parse(localStorage.getItem('nassRowIds') || '[]');
