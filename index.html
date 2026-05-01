@@ -151,9 +151,9 @@ if ('serviceWorker' in navigator) {
   </div>
   <button class="btn btn-ghost dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Toggle dark mode">&#9790;</button>
   <button class="btn btn-ghost" id="ms-btn" onclick="window._nassMsLaunch()" title="Open Messenger" style="display:none">&#128172; Chat</button>
-  <button class="btn btn-ghost" onclick="exportCSV()">&#8595; Export CSV</button>
-  <button class="btn btn-ghost" id="btn-report" onclick="exportReport()" title="Generate formal report (current filters)">&#128196; Report</button>
-  <button class="btn btn-gold"  onclick="openModal()">+ Add Record</button>
+  <button class="btn btn-ghost" onclick="exportCSV()" title="Export CSV">&#8595;<span class="tb-lbl"> Export CSV</span></button>
+  <button class="btn btn-ghost" id="btn-report" onclick="exportReport()" title="Generate report">&#128196;<span class="tb-lbl"> Report</span></button>
+  <button class="btn btn-gold" onclick="openModal()">+<span class="tb-lbl"> Add Record</span></button>
   <div id="nass-user-wrap" style="display:none;align-items:center;gap:10px;border-left:1px solid rgba(255,255,255,0.2);margin-left:4px;padding-left:14px">
     <div class="user-avatar" id="nass-user-avatar">?</div>
     <div class="user-info">
