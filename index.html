@@ -147,7 +147,7 @@ if ('serviceWorker' in navigator) {
     <button class="tab"    id="tb-users"     onclick="showView('users')" style="display:none">Users</button>
     <button class="tab"    id="tb-kanban"    onclick="showView('kanban')">&#9783; Kanban</button>
     <button class="tab"    id="tb-audit"     onclick="showView('audit')" style="display:none">&#128203; Activity Log</button>
-    <button class="tab"    id="tb-mail"      onclick="showView('mail')"  style="display:none">&#9993; Mail<span id="ml-tab-badge" class="tab-badge" style="display:none"></span></button>
+    <button class="tab"    id="tb-mail"      onclick="showView('inbox');_mlSetFolder('inbox')"  style="display:none">&#9993; Mail<span id="ml-tab-badge" class="tab-badge" style="display:none"></span></button>
     <button class="tab"    id="tb-drivesearch" onclick="showView('drivesearch')">&#128269; Drive Search</button>
   </div>
   <button class="btn btn-ghost dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Toggle dark mode">&#9790;</button>
@@ -224,9 +224,35 @@ if ('serviceWorker' in navigator) {
   <div class="gm-shell">
     <!-- Sidebar -->
     <div class="gm-side">
-      <div class="gm-side-lbl gm-side-active" id="gm-filter-all" onclick="window._gmFilter(null,this)">
+      <!-- Compose -->
+      <button class="ml-compose-btn" onclick="openMailCompose()">&#9998;&nbsp; Compose</button>
+      <div class="gm-side-divider" style="margin-top:8px"></div>
+      <!-- Internal Mail -->
+      <div class="gm-side-section">Internal Mail</div>
+      <div class="gm-side-lbl" id="ml-f-inbox" onclick="_mlSetFolder('inbox',this)">
         <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
-        All Mail
+        Inbox
+        <span class="gm-side-ct" id="ml-badge-inbox" style="display:none"></span>
+      </div>
+      <div class="gm-side-lbl" id="ml-f-sent" onclick="_mlSetFolder('sent',this)">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+        Sent
+      </div>
+      <div class="gm-side-lbl" id="ml-f-drafts" onclick="_mlSetFolder('drafts',this)">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+        Drafts
+        <span class="gm-side-ct" id="ml-badge-drafts" style="display:none"></span>
+      </div>
+      <div class="gm-side-lbl" id="ml-f-trash" onclick="_mlSetFolder('trash',this)">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        Trash
+      </div>
+      <div class="gm-side-divider"></div>
+      <!-- My Documents -->
+      <div class="gm-side-section">My Documents</div>
+      <div class="gm-side-lbl gm-side-active" id="gm-filter-all" onclick="window._gmFilter(null,this)">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
+        All Documents
         <span class="gm-side-ct" id="gm-unread-ct" style="display:none"></span>
       </div>
       <div class="gm-side-divider"></div>
@@ -264,6 +290,7 @@ if ('serviceWorker' in navigator) {
     </div>
     <!-- Main -->
     <div class="gm-body">
+      <!-- Docs toolbar -->
       <div class="gm-toolbar" id="gm-toolbar">
         <label class="gm-chk-wrap" title="Select all"><input type="checkbox" id="gm-sel-all" onchange="window._gmSelAll(this.checked)"></label>
         <button class="gm-icon-btn" title="Refresh" onclick="loadInbox()">&#8635;</button>
@@ -272,44 +299,8 @@ if ('serviceWorker' in navigator) {
         <button class="gm-pg-btn" id="gm-prev-btn" onclick="window._gmPrev()" disabled title="Older">&#8249;</button>
         <button class="gm-pg-btn" id="gm-next-btn" onclick="window._gmNext()" disabled title="Newer">&#8250;</button>
       </div>
-      <div class="gm-sub-bar" id="inbox-sub"></div>
-      <div id="inbox-list"><div class="gm-loading">Loading&#8230;</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     MAIL VIEW
-     ═══════════════════════════════════════════════════════════════ -->
-<div id="view-mail" style="display:none">
-  <div class="gm-shell">
-    <!-- Sidebar -->
-    <div class="gm-side">
-      <button class="ml-compose-btn" onclick="openMailCompose()">&#9998;&nbsp; Compose</button>
-      <div class="gm-side-divider" style="margin-top:8px"></div>
-      <div class="gm-side-lbl gm-side-active" id="ml-f-inbox" onclick="_mlSetFolder('inbox',this)">
-        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
-        Inbox
-        <span class="gm-side-ct" id="ml-badge-inbox" style="display:none"></span>
-      </div>
-      <div class="gm-side-lbl" id="ml-f-sent" onclick="_mlSetFolder('sent',this)">
-        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
-        Sent
-      </div>
-      <div class="gm-side-lbl" id="ml-f-drafts" onclick="_mlSetFolder('drafts',this)">
-        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
-        Drafts
-        <span class="gm-side-ct" id="ml-badge-drafts" style="display:none"></span>
-      </div>
-      <div class="gm-side-divider"></div>
-      <div class="gm-side-lbl" id="ml-f-trash" onclick="_mlSetFolder('trash',this)">
-        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-        Trash
-      </div>
-    </div>
-    <!-- Body -->
-    <div class="gm-body">
-      <div class="gm-toolbar" id="ml-toolbar">
+      <!-- Mail toolbar -->
+      <div class="gm-toolbar" id="ml-toolbar" style="display:none">
         <span class="ml-folder-title" id="ml-folder-title">Inbox</span>
         <div style="flex:1"></div>
         <span class="gm-pg-info" id="ml-pg-info"></span>
@@ -317,11 +308,14 @@ if ('serviceWorker' in navigator) {
         <button class="gm-pg-btn" id="ml-pg-next" onclick="_mlPageNext()" disabled title="Next">&#8250;</button>
         <button class="gm-icon-btn" onclick="loadMail()" title="Refresh">&#8635;</button>
       </div>
-      <div id="ml-list"><div class="gm-loading">Loading&#8230;</div></div>
+      <div class="gm-sub-bar" id="inbox-sub"></div>
+      <div id="inbox-list"><div class="gm-loading">Loading&#8230;</div></div>
+      <div id="ml-list" style="display:none"></div>
       <div id="ml-detail" style="display:none"></div>
     </div>
   </div>
 </div>
+
 
 <!-- Compose Panel (fixed bottom-right, Gmail-style) -->
 <div id="ml-compose" style="display:none;position:fixed;bottom:0;right:24px;width:520px;max-width:96vw;z-index:1200;border-radius:10px 10px 0 0;box-shadow:0 8px 40px rgba(0,0,0,0.30);border:1px solid #c8cdd8;border-bottom:none;overflow:hidden">
