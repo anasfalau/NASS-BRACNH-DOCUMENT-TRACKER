@@ -1050,23 +1050,24 @@ function _mlBackToList(){
   if(ml)ml.style.display='block';if(md)md.style.display='none';
 }
 
+function _mlRemoveFromList(mailId){_mlList=_mlList.filter(function(x){return x.id!==mailId;});var md=document.getElementById('ml-detail');if(md&&md.style.display!=='none'){md.style.display='none';var ml=document.getElementById('ml-list');if(ml)ml.style.display='block';}_mlRenderList();_mlLoadBadges();}
 function _mlTrashMail(mailId){
   var uid=window.userSession&&window.userSession.user.id;
   var m=_mlList.find(function(x){return x.id===mailId;});
   if(_mlFolder==='sent'||_mlFolder==='drafts'){
     if(!confirm('Permanently delete this message?'))return;
-    window._sb.from('nass_mail').delete().eq('id',mailId).eq('sender_id',uid).then(function(){showToast('Deleted.','ok');loadMail();});
+    window._sb.from('nass_mail').delete().eq('id',mailId).eq('sender_id',uid).then(function(r){if(r.error){showToast('Delete failed.','error');return;}showToast('Deleted.','ok');_mlRemoveFromList(mailId);});
   } else if(_mlFolder==='trash'){
     if(!confirm('Permanently delete this message?'))return;
-    if(m&&m._recip_row_id)window._sb.from('nass_mail_recipients').delete().eq('id',m._recip_row_id).then(function(){showToast('Deleted.','ok');loadMail();});
+    if(m&&m._recip_row_id)window._sb.from('nass_mail_recipients').delete().eq('id',m._recip_row_id).then(function(r){if(r.error){showToast('Delete failed.','error');return;}showToast('Deleted.','ok');_mlRemoveFromList(mailId);});
   } else {
-    if(m&&m._recip_row_id)window._sb.from('nass_mail_recipients').update({deleted_at:new Date().toISOString()}).eq('id',m._recip_row_id).then(function(){showToast('Moved to Trash.','ok');loadMail();});
+    if(m&&m._recip_row_id)window._sb.from('nass_mail_recipients').update({deleted_at:new Date().toISOString()}).eq('id',m._recip_row_id).then(function(r){if(r.error){showToast('Delete failed.','error');return;}showToast('Moved to Trash.','ok');_mlRemoveFromList(mailId);});
   }
 }
 
 function _mlRestoreMail(mailId){
   var m=_mlList.find(function(x){return x.id===mailId;});
-  if(m&&m._recip_row_id)window._sb.from('nass_mail_recipients').update({deleted_at:null}).eq('id',m._recip_row_id).then(function(){showToast('Restored to Inbox.','ok');loadMail();});
+  if(m&&m._recip_row_id)window._sb.from('nass_mail_recipients').update({deleted_at:null}).eq('id',m._recip_row_id).then(function(r){if(r.error){showToast('Restore failed.','error');return;}showToast('Restored to Inbox.','ok');_mlRemoveFromList(mailId);});
 }
 
 function _mlEditDraft(mailId){
