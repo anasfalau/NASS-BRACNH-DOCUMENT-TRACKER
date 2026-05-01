@@ -37,46 +37,100 @@ function closeModal(){document.getElementById('mbg').classList.remove('open');}
 /* ================================================================
    DRIVE SEARCH — public entry point
    ================================================================ */
+var _dsBreadcrumb=[];
 function driveSearch(){
   var q=(document.getElementById('ds-input').value||'').trim();
   if(!q)return;
   var resEl=document.getElementById('ds-results');
-  resEl.innerHTML='<div class="ds-loading"><span class="ds-spinner"></span>Searching Google Drive\u2026</div>';
+  resEl.innerHTML='<div class="ds-loading"><span class="ds-spinner"></span>Searching Google Drive…</div>';
+  _dsBreadcrumb=[];_dsUpdateBreadcrumb();
   _gwithToken(async function(){
     try{
       var files=await _dsMultiQuery(q);
-      if(!files.length){resEl.innerHTML='<div class="ds-empty-state">No documents found for \u201c'+_esc(q)+'\u201d.</div>';return;}
-      // Score and rank by IDF-weighted relevance to query
-      var dsTerms=_dsTerms(q);
-      var idf=_computeIDF(dsTerms,files.map(function(f){return f.name;}));
-      var scored=files.map(function(f){return{f:f,score:_dsScoreIDF(dsTerms,idf,f.name,f.mimeType)};});
-      scored.sort(function(a,b){return b.score-a.score;});
-      resEl.innerHTML='<div class="ds-count">'+scored.length+' result'+(scored.length===1?'':'s')+' for \u201c'+_esc(q)+'\u201d</div>'+
-        scored.map(function(item){
-          var f=item.f;
-          var icon=_dsIcon(f.mimeType);
-          var date=f.modifiedTime?new Date(f.modifiedTime).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
-          var isPdf=f.mimeType==='application/pdf';
-          var sz=f.size?_dsFmtSize(+f.size):'';
-          var typeLabel=_dsMimeLabel(f.mimeType);
-          var safeName=f.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-          var safeLink=f.webViewLink.replace(/'/g,'');
-          return'<div class="ds-item">'+
-            '<span class="ds-icon">'+icon+'</span>'+
-            '<div class="ds-info">'+
-              '<div class="ds-name">'+_dsHighlight(_esc(f.name),q)+'</div>'+
-              '<div class="ds-meta">'+date+(sz?' \u00b7 '+sz:'')+' \u00b7 <span class="ds-type-badge">'+typeLabel+'</span></div>'+
-            '</div>'+
-            '<div class="ds-actions">'+
-              (isPdf?'<button class="ds-preview-btn" onclick="dsPreview(\''+f.id+'\',\''+safeName+'\',\''+safeLink+'\')">\u25b6 Preview</button>':'')+
-              '<a class="ds-open-btn" href="'+f.webViewLink+'" target="_blank">Open in Drive</a>'+
-            '</div>'+
-          '</div>';
-        }).join('');
+      _dsRenderResults(files,q,null);
     }catch(e){resEl.innerHTML='<div class="ds-empty-state" style="color:#c0392b">Search failed: '+_esc(e.message)+'</div>';console.error('[DriveSearch]',e);}
   });
 }
-
+function _dsRenderResults(files,q,folderLabel){
+  var resEl=document.getElementById('ds-results');
+  if(!files.length){resEl.innerHTML='<div class="ds-empty-state">No documents found'+(q?' for “'+_esc(q)+'”':'')+'.</div>';return;}
+  var folders=files.filter(function(f){return f.mimeType==='application/vnd.google-apps.folder';});
+  var docs=files.filter(function(f){return f.mimeType!=='application/vnd.google-apps.folder';});
+  var dsTerms=q?_dsTerms(q):[];
+  var idf=dsTerms.length?_computeIDF(dsTerms,docs.map(function(f){return f.name;})):{};
+  var scored=docs.map(function(f){return{f:f,score:dsTerms.length?_dsScoreIDF(dsTerms,idf,f.name,f.mimeType):0};});
+  scored.sort(function(a,b){return b.score-a.score;});
+  var allItems=folders.map(function(f){return{f:f,isFolder:true};}).concat(scored.map(function(x){return{f:x.f,isFolder:false};}));
+  var total=allItems.length;
+  var label=folderLabel||(total+' result'+(total===1?'':'s')+(q?' for “'+_esc(q)+'”':''));
+  resEl.innerHTML='<div class="ds-count">'+label+'</div>'+allItems.map(function(item){
+    var f=item.f;var icon=_dsIcon(f.mimeType);
+    var date=f.modifiedTime?new Date(f.modifiedTime).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
+    var sz=f.size?_dsFmtSize(+f.size):'';
+    var typeLabel=_dsMimeLabel(f.mimeType);
+    var safeName=f.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    var safeLink=(f.webViewLink||'').replace(/'/g,'');
+    var safeId=f.id.replace(/'/g,'');
+    var safeMime=(f.mimeType||'').replace(/'/g,'');
+    if(item.isFolder){
+      return'<div class="ds-item" style="cursor:default">'+
+        '<span class="ds-icon">'+icon+'</span>'+
+        '<div class="ds-info"><div class="ds-name">'+_esc(f.name)+'</div>'+
+        '<div class="ds-meta"><span class="ds-type-badge">Folder</span></div></div>'+
+        '<div class="ds-actions"><button class="ds-folder-browse-btn" onclick="_dsBrowseFolder(\''+safeId+'\',\''+safeName+'\')">Browse</button></div></div>';
+    }
+    return'<div class="ds-item" id="dsi-'+safeId+'" onclick="_dsOpenPreview(\''+safeId+'\',\''+safeName+'\',\''+safeMime+'\',\''+safeLink+'\')" style="cursor:pointer">'+
+      '<span class="ds-icon">'+icon+'</span>'+
+      '<div class="ds-info">'+
+        '<div class="ds-name">'+(q?_dsHighlight(_esc(f.name),q):_esc(f.name))+'</div>'+
+        '<div class="ds-meta">'+(date||'')+(sz?' · '+sz:'')+' · <span class="ds-type-badge">'+typeLabel+'</span></div>'+
+      '</div>'+
+      '<div class="ds-actions"><a class="ds-open-btn" href="'+_esc(f.webViewLink||'')+'" target="_blank" onclick="event.stopPropagation()">Open</a></div></div>';
+  }).join('');
+}
+function _dsOpenPreview(id,name,mimeType,webViewLink){
+  var panel=document.getElementById('ds-preview-panel');if(!panel)return;
+  document.querySelectorAll('#ds-results .ds-item').forEach(function(el){el.classList.remove('ds-item-active');});
+  var active=document.getElementById('dsi-'+id);if(active)active.classList.add('ds-item-active');
+  var isPreviewable=mimeType==='application/pdf'||mimeType.startsWith('image/')||mimeType.includes('google-apps');
+  var previewUrl=mimeType==='application/pdf'?'https://drive.google.com/file/d/'+id+'/preview':webViewLink;
+  panel.innerHTML='<div class="ds-preview-bar">'+
+    '<span class="ds-preview-title">'+_esc(name)+'</span>'+
+    '<a href="'+_esc(webViewLink)+'" target="_blank" class="pdf-open-link" style="margin-left:8px">Open in Drive ↗</a>'+
+  '</div>'+
+  (isPreviewable
+    ?'<iframe id="ds-iframe" src="'+previewUrl+'" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>'
+    :'<div class="ds-preview-placeholder" style="flex:1"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg><div>Preview not available for this file type.</div><a href="'+_esc(webViewLink||'')+'" target="_blank" class="btn btn-navy" style="font-size:12px;padding:8px 18px">Open in Drive</a></div>');
+}
+function _dsBrowseFolder(folderId,folderName){
+  var resEl=document.getElementById('ds-results');
+  resEl.innerHTML='<div class="ds-loading"><span class="ds-spinner"></span>Loading folder…</div>';
+  _dsBreadcrumb.push({id:folderId,name:folderName});_dsUpdateBreadcrumb();
+  _gwithToken(async function(){
+    try{
+      var flds='files(id,name,mimeType,modifiedTime,webViewLink,size)';
+      var tail='&fields='+flds+'&pageSize=100&supportsAllDrives=true&includeItemsFromAllDrives=true&orderBy=folder,name';
+      var hdr={'Authorization':'Bearer '+_gTok};
+      var res=await fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent("'"+folderId+"' in parents and trashed=false")+tail,{headers:hdr});
+      var data=await res.json();
+      _dsRenderResults(data.files||[],null,_esc(folderName)+' — '+(data.files||[]).length+' item'+((data.files||[]).length===1?'':'s'));
+    }catch(e){resEl.innerHTML='<div class="ds-empty-state" style="color:#c0392b">Failed to load folder: '+_esc(e.message)+'</div>';}
+  });
+}
+function _dsUpdateBreadcrumb(){
+  var el=document.getElementById('ds-breadcrumb');if(!el)return;
+  if(!_dsBreadcrumb.length){el.style.display='none';return;}
+  el.style.display='flex';
+  el.innerHTML='<button class="ds-breadcrumb-btn" onclick="_dsBreadcrumbHome()">Search</button>'+
+    _dsBreadcrumb.map(function(seg,i){
+      return'<span class="ds-breadcrumb-sep">›</span>'+
+        (i<_dsBreadcrumb.length-1
+          ?'<button class="ds-breadcrumb-btn" onclick="_dsBreadcrumbTo('+i+')">'+_esc(seg.name)+'</button>'
+          :'<span style="font-weight:600;color:var(--fg-ink)">'+_esc(seg.name)+'</span>');
+    }).join('');
+}
+function _dsBreadcrumbHome(){_dsBreadcrumb=[];_dsUpdateBreadcrumb();var resEl=document.getElementById('ds-results');resEl.innerHTML='<div class="ds-empty-state">Enter a search term to find documents in Google Drive.</div>';var panel=document.getElementById('ds-preview-panel');if(panel)panel.innerHTML='<div class="ds-preview-placeholder"><svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg><div>Select a file to preview</div></div>';}
+function _dsBreadcrumbTo(idx){var seg=_dsBreadcrumb[idx];_dsBreadcrumb=_dsBreadcrumb.slice(0,idx);_dsBrowseFolder(seg.id,seg.name);}
 /* ── Multi-strategy parallel query ─────────────────────────────── */
 async function _dsMultiQuery(q){
   var seen=new Map();
@@ -173,7 +227,7 @@ function _dsHighlight(escaped,q){
 function _dsIcon(mime){if(mime==='application/pdf')return'\uD83D\uDCC4';if(mime.includes('spreadsheet')||mime.includes('excel'))return'\uD83D\uDCCA';if(mime.includes('document')||mime.includes('word'))return'\uD83D\uDCDD';if(mime.includes('presentation')||mime.includes('powerpoint'))return'\uD83D\uDCCB';if(mime.includes('image'))return'\uD83D\uDDBC\uFE0F';if(mime.includes('folder'))return'\uD83D\uDCC1';return'\uD83D\uDCCE';}
 function _dsMimeLabel(mime){if(mime==='application/pdf')return'PDF';if(mime.includes('spreadsheet')||mime.includes('excel'))return'Spreadsheet';if(mime.includes('document')||mime.includes('word'))return'Document';if(mime.includes('presentation')||mime.includes('powerpoint'))return'Presentation';if(mime.includes('image'))return'Image';if(mime.includes('folder'))return'Folder';return'File';}
 function _dsFmtSize(b){if(b<1024)return b+'B';if(b<1048576)return Math.round(b/1024)+'KB';return(b/1048576).toFixed(1)+'MB';}
-function dsPreview(id,name,link){document.getElementById('ds-pdf-title').textContent=name;document.getElementById('ds-pdf-open').href=link||'#';document.getElementById('ds-pdf-frame').src='https://drive.google.com/file/d/'+id+'/preview';document.getElementById('ds-pdf-bg').classList.add('open');}
+function dsPreview(id,name,link){_dsOpenPreview(id,name,'application/pdf',link||'');}
 var currentDetailIdx=null;function openDetail(idx){var r=rows[idx];currentDetailIdx=idx;document.getElementById('d-ref').textContent=r[1]||'—';var _dsub=document.getElementById('d-subject');_dsub.textContent=r[2]||'—';_dsub.removeAttribute('href');_dsub.classList.remove('detail-subject-linked');document.getElementById('d-serial').textContent=(getFiltered().indexOf(r)+1)+'.';document.getElementById('d-off').textContent=r[4]||'—';document.getElementById('d-loc').textContent=r[3]||'—';document.getElementById('d-act').textContent=r[5]||'—';document.getElementById('d-drcv').textContent=fmtDate(r[6])||'—';document.getElementById('d-dmov').textContent=fmtDate(r[7])||'—';document.getElementById('d-due').textContent=fmtDate(r[9])||'—';document.getElementById('d-sla').textContent=r[8]||'—';document.getElementById('d-rem').textContent=r[12]||'—';var st=r[10]||'';var dsSt=document.getElementById('d-status');dsSt.textContent=st;dsSt.className='detail-status '+(st==='Active'?'ds-active':st==='Completed'?'ds-completed':st==='On Hold'?'ds-hold':st==='Cancelled'?'ds-cancelled':st==='Filed'?'ds-filed':'');var fl=computeFlag(r)||r[11]||'';var dsFl=document.getElementById('d-flag');dsFl.textContent=fl;dsFl.className='detail-flag '+(fl==='OVERDUE'?'df-overdue':fl==='ON TIME'?'df-ontime':'');var auditBy=document.getElementById('d-updated-by');if(auditBy)auditBy.textContent=r[13]||'—';var auditAt=document.getElementById('d-updated-at');if(auditAt){var ad=r[14]?new Date(r[14]):null;auditAt.textContent=ad?ad.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';}document.getElementById('detail-mbg').classList.add('open');gdriveSearchForRecord(r[2],r[1]);loadRecordHistory(idx);}
 function saveModal(){if(!['editor','superuser'].includes(window.userRole||'viewer'))return;var r=['',document.getElementById('m-ref').value.trim(),document.getElementById('m-subject').value.trim(),document.getElementById('m-loc').value,document.getElementById('m-off').value,document.getElementById('m-act').value,document.getElementById('m-drcv').value,document.getElementById('m-dmov').value,document.getElementById('m-sla').value.trim(),document.getElementById('m-due').value,document.getElementById('m-stat').value,'',document.getElementById('m-rem').value.trim()];if(!r[9]){var auto=calcDueDate(r[7],r[8]);if(auto)r[9]=auto;}r[11]=computeFlag(r);var _newRef=(r[1]||'').trim().toLowerCase();if(_newRef){var _ei2=document.getElementById('m-idx').value!==''?parseInt(document.getElementById('m-idx').value):-1;var _dupIdx=rows.findIndex(function(row,_i){return _i!==_ei2&&(row[1]||'').trim().toLowerCase()===_newRef;});if(_dupIdx>=0&&!confirm('⚠ File Ref "'+r[1]+'" already exists at serial #'+(_dupIdx+1)+'.\n\nSave as a new entry anyway?'))return;}var idx=document.getElementById('m-idx').value;if(idx!=='')rows[parseInt(idx)]=r;else rows.push(r);saveData();closeModal();refresh();showToast('Record saved successfully.','success');}
 var _fiPage=0;function renderAdmin(){function draw(list,cid){var el=document.getElementById(cid);el.innerHTML='';list.forEach(function(item,i){var t=document.createElement('span');t.className='tag';t.textContent=item+' ';var x=document.createElement('button');x.className='tx';x.textContent='×';x.addEventListener('click',(function(idx){return function(){if(confirm('Remove "'+list[idx]+'"?')){list.splice(idx,1);renderAdmin();refresh();}};})(i));t.appendChild(x);el.appendChild(t);});}draw(officers,'at-officers');(function(){var FP=10;var e2=document.getElementById('at-fileIndex');e2.innerHTML='';var st=_fiPage*FP;fileIndex.slice(st,st+FP).forEach(function(item,pi){var ri=st+pi;var t=document.createElement('span');t.className='tag';t.textContent=item+' ';var x=document.createElement('button');x.className='tx';x.textContent='×';x.addEventListener('click',(function(idx){return function(){if(confirm('Remove "'+fileIndex[idx]+'"?')){fileIndex.splice(idx,1);if(_fiPage>0&&_fiPage*FP>=fileIndex.length)_fiPage--;renderAdmin();refresh();}};})(ri));t.appendChild(x);e2.appendChild(t);});var tp=Math.ceil(fileIndex.length/FP);if(tp>1){var pc=document.createElement('div');pc.className='fi-pg';var prevDis=(_fiPage===0)?'disabled':'';var nextDis=(_fiPage>=tp-1)?'disabled':'';pc.innerHTML='<button class="fi-pgb" '+prevDis+' onclick="_fiPage--;renderAdmin()">‹</button>'+'<span class="fi-pgn">'+(_fiPage+1)+' / '+tp+'</span>'+'<button class="fi-pgb" '+nextDis+' onclick="_fiPage++;renderAdmin()">›</button>';e2.appendChild(pc);}})();draw(statuses,'at-statuses');draw(locations,'at-locations');draw(actions,'at-actions');}
@@ -914,6 +968,29 @@ function toggleDarkMode(){var on=document.body.classList.toggle('dark');document
 
 // ── Internal Mail ─────────────────────────────────────────────────
 var _mlFolder='inbox',_mlList=[],_mlPage=0,_mlPPG=15,_mlUsersMap={},_mlAllUsers=[],_mlComposeDraftId=null,_mlComposeReplyTo=null;
+var _mlPollInterval=null,_mlPollLastAt=null;
+function _mlRemoveFromList(mailId){var d=document.getElementById('ml-detail');if(d&&d.style.display!=='none')d.style.display='none';_mlList=_mlList.filter(function(m){return m.id!==mailId;});_mlRenderList();_mlLoadBadges();}
+function _mlStartPolling(){if(_mlPollInterval)return;_mlPollLastAt=new Date().toISOString();_mlPollInterval=setInterval(_mlPollNew,15000);}
+function _mlPollNew(){
+  if(!window._sb||!window.userSession)return;
+  var uid=window.userSession.user.id;
+  var since=_mlPollLastAt;_mlPollLastAt=new Date().toISOString();
+  window._sb.from('nass_mail_recipients').select('mail_id,read_at,id,type').eq('recipient_id',uid).is('deleted_at',null).gt('created_at',since).then(function(r){
+    if(!r.data||!r.data.length)return;
+    var mailIds=r.data.map(function(x){return x.mail_id;});
+    var rm={};r.data.forEach(function(x){rm[x.mail_id]=x;});
+    window._sb.from('nass_mail').select('id,subject,sender_id,created_at,body').in('id',mailIds).order('created_at',{ascending:false}).then(function(mRes){
+      if(!mRes.data||!mRes.data.length)return;
+      var existing=new Set(_mlList.map(function(m){return m.id;}));
+      var newMails=mRes.data.filter(function(m){return!existing.has(m.id);}).map(function(m){return Object.assign({},m,{_read:false,_recip_row_id:rm[m.id]&&rm[m.id].id,_recip_type:rm[m.id]&&rm[m.id].type});});
+      if(!newMails.length)return;
+      if(typeof _inboxMode!=='undefined'&&_inboxMode==='mail'&&_mlFolder==='inbox'){
+        newMails.forEach(function(m){_mlList.unshift(m);});_mlRenderList();
+      }
+      _mlLoadBadges();
+    });
+  });
+}
 
 function loadMail(folder){
   if(folder)_mlFolder=folder;

@@ -62,6 +62,7 @@ var rowIds = [];
   }
 
   await loadScript('app.js');
+  if (typeof _mlStartPolling === 'function') _mlStartPolling();
   // chat.js is lazy-loaded on first FAB click — see _nassAiLaunch in index.html
   if (typeof window.nassShowFab === 'function') window.nassShowFab();
   if (typeof applyRolePermissions === 'function') applyRolePermissions();
