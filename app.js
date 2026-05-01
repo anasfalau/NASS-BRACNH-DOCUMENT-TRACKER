@@ -92,19 +92,17 @@ function _dsOpenPreview(id,name,mimeType,webViewLink){
   var panel=document.getElementById('ds-preview-panel');if(!panel)return;
   document.querySelectorAll('#ds-results .ds-item').forEach(function(el){el.classList.remove('ds-item-active');});
   var active=document.getElementById('dsi-'+id);if(active)active.classList.add('ds-item-active');
-  var isPreviewable=mimeType==='application/pdf'||mimeType.startsWith('image/')||mimeType.includes('google-apps');
   var previewUrl;
-  if(mimeType==='application/pdf'||mimeType.startsWith('image/')){
-    previewUrl='https://drive.google.com/file/d/'+id+'/preview';
-  } else if(mimeType.includes('document')){
+  if(mimeType==='application/vnd.google-apps.document'){
     previewUrl='https://docs.google.com/document/d/'+id+'/preview';
-  } else if(mimeType.includes('spreadsheet')){
+  } else if(mimeType==='application/vnd.google-apps.spreadsheet'){
     previewUrl='https://docs.google.com/spreadsheets/d/'+id+'/preview';
-  } else if(mimeType.includes('presentation')){
+  } else if(mimeType==='application/vnd.google-apps.presentation'){
     previewUrl='https://docs.google.com/presentation/d/'+id+'/preview';
   } else {
-    previewUrl=webViewLink;
+    previewUrl='https://drive.google.com/file/d/'+id+'/preview';
   }
+  var isPreviewable=mimeType!=='application/vnd.google-apps.folder';
   panel.innerHTML='<div class="ds-preview-bar">'+
     '<span class="ds-preview-title">'+_esc(name)+'</span>'+
     '<a href="'+_esc(webViewLink)+'" target="_blank" class="pdf-open-link" style="margin-left:8px">Open in Drive ↗</a>'+
