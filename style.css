@@ -40,9 +40,11 @@ body{font-family:var(--font-sans);font-size:13px;background:var(--bg-app);color:
 .sp{flex:1}
 
 /* === TABS === */
-.tabs{display:flex;gap:3px;overflow-x:auto;flex-shrink:1;min-width:0;scrollbar-width:none;-ms-overflow-style:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{padding:7px 16px;border:none;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.75);cursor:pointer;font-size:12px;font-weight:600;border-radius:var(--radius-sm);letter-spacing:0.02em;transition:background var(--ease-std);font-family:var(--font-sans)}
+.tabs{display:flex;gap:3px;overflow-x:auto;flex-shrink:1;min-width:0;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.25) transparent}
+.tabs::-webkit-scrollbar{height:2px}
+.tabs::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.3);border-radius:1px}
+.tabs::-webkit-scrollbar-track{background:transparent}
+.tab{padding:7px 16px;border:none;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.75);cursor:pointer;font-size:12px;font-weight:600;border-radius:var(--radius-sm);letter-spacing:0.02em;transition:background var(--ease-std);font-family:var(--font-sans);flex-shrink:0}
 .tab:hover{background:rgba(255,255,255,0.2);color:var(--fg-on-navy)}
 .tab.on{background:var(--bg-card);color:var(--nass-navy-700);font-weight:700;box-shadow:var(--shadow-btn)}
 
@@ -1451,11 +1453,11 @@ body.dark .ml-det-toolbar,body.dark .ml-det-head{border-bottom-color:var(--borde
 }
 /* 1100px — shrink everything, collapse spacer */
 @media(max-width:1100px){
-  .topbar{gap:7px;padding:0 10px}
+  .topbar{gap:6px;padding:0 10px}
   .app-title{font-size:12px}
   .sp{flex:0 0 0;min-width:0}
-  .btn{padding:6px 9px;font-size:11px}
-  .tab{padding:5px 9px;font-size:11px}
+  .btn{padding:5px 8px;font-size:11px}
+  .tab{padding:5px 8px;font-size:11px;letter-spacing:0}
 }
 /* 960px — icon-only buttons, hide user email/label */
 @media(max-width:960px){
@@ -1464,7 +1466,11 @@ body.dark .ml-det-toolbar,body.dark .ml-det-head{border-bottom-color:var(--borde
   .btn-signout-text{display:none}
   .app-title{display:none}
 }
-/* 860px — tabs move to a scrollable second row */
+/* Editor/superuser: extra tabs — always use two-row layout */
+.topbar.topbar-many-tabs{flex-wrap:wrap;height:auto;padding:6px 10px 0;gap:6px}
+.topbar.topbar-many-tabs .tabs{order:10;width:calc(100% + 20px);margin-left:-10px;margin-right:-10px;padding:4px 10px 6px;background:rgba(0,0,0,0.18);border-top:1px solid rgba(255,255,255,0.1)}
+.topbar.topbar-many-tabs .sp{display:none}
+/* 860px — all roles: tabs move to second row */
 @media(max-width:860px){
   .topbar{flex-wrap:wrap;height:auto;padding:6px 10px 0;gap:6px}
   .topbar-logo{height:40px}
