@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" href="./NN-logo-transparent.png">
 <link rel="apple-touch-icon" href="./NN-logo.png">
 <title>NASS Branch &mdash; Workflow Tracker</title>
-<link rel="stylesheet" href="style.css?v=20260435">
+<link rel="stylesheet" href="style.css?v=20260502">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -134,42 +134,50 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
-<div class="topbar">
-  <img class="topbar-logo" src="NN-logo-transparent.png" alt="Nigerian Navy">
-  <a href="https://anasfalau.github.io/NASS-BRANCH-DOCUMENT-TRACKER/" style="text-decoration:none;display:contents; color:white;"><div><div class="app-title">DOCUMENT WORKFLOW TRACKER</div>
-       <div class="app-sub">Naval Safety and Standards Branch</div></div></a>
-  <div class="sp"></div>
-  <div class="tabs">
-    <button class="tab on" id="tb-tracker"   onclick="showView('tracker')">Tracker</button>
-    <button class="tab"    id="tb-inbox"     onclick="showView('inbox')" style="display:none">&#128274; Inbox<span id="inbox-badge" class="tab-badge" style="display:none"></span></button>
-    <button class="tab"    id="tb-dashboard" onclick="showView('dashboard')">&#128200; Dashboard</button>
-    <button class="tab"    id="tb-admin"     onclick="showView('admin')">Admin</button>
-    <button class="tab"    id="tb-users"     onclick="showView('users')" style="display:none">Users</button>
-    <button class="tab"    id="tb-kanban"    onclick="showView('kanban')">&#9783; Kanban</button>
-    <button class="tab"    id="tb-audit"     onclick="showView('audit')" style="display:none">&#128203; Activity</button>
-    <button class="tab"    id="tb-drivesearch" onclick="showView('drivesearch')">&#128269; Drive</button>
-  </div>
-  <button class="btn btn-ghost dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Toggle dark mode">&#9790;</button>
-  <button class="btn btn-ghost" id="ms-btn" onclick="window._nassMsLaunch()" title="Open Messenger" style="display:none">&#128172; Chat</button>
-  <button class="btn btn-ghost" onclick="exportCSV()" title="Export CSV">&#8595;<span class="tb-lbl"> Export CSV</span></button>
-  <button class="btn btn-ghost" id="btn-report" onclick="exportReport()" title="Generate report">&#128196;<span class="tb-lbl"> Report</span></button>
-  <button class="btn btn-gold" onclick="openModal()">+<span class="tb-lbl"> Add Record</span></button>
-  <div id="nass-user-wrap" style="display:none;align-items:center;gap:10px;border-left:1px solid rgba(255,255,255,0.2);margin-left:4px;padding-left:14px">
-    <div class="user-avatar" id="nass-user-avatar">?</div>
-    <div class="user-info">
-      <span id="nass-user-role-badge" class="role-badge" style="display:none"></span>
-      <span id="nass-user-email" style="font-size:11px;color:rgba(255,255,255,0.82);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500"></span>
+<header class="topbar">
+  <a class="topbar__brand" href="https://anasfalau.github.io/NASS-BRANCH-DOCUMENT-TRACKER/">
+    <img class="topbar__logo" src="NN-logo-transparent.png" alt="Nigerian Navy">
+    <div class="topbar__wordmark">
+      <span class="topbar__wordmark-title">DOCUMENT WORKFLOW TRACKER</span>
+      <span class="topbar__wordmark-sub">Naval Safety and Standards Branch</span>
     </div>
-    <button class="btn-signout" onclick="nassLogout()" title="Sign out of NASS Tracker">
+  </a>
+  <nav class="topbar__nav">
+    <button class="topbar__nav-item is-active" id="tb-tracker"     onclick="showView('tracker')">Tracker</button>
+    <button class="topbar__nav-item"            id="tb-inbox"       onclick="showView('inbox')" style="display:none">&#128274; Inbox<span id="inbox-badge" class="topbar__nav-badge topbar__nav-badge--alert" style="display:none"></span></button>
+    <button class="topbar__nav-item"            id="tb-dashboard"   onclick="showView('dashboard')">&#128200; Dashboard</button>
+    <button class="topbar__nav-item"            id="tb-admin"       onclick="showView('admin')" style="display:none">Admin</button>
+    <button class="topbar__nav-item"            id="tb-users"       onclick="showView('users')" style="display:none">Users</button>
+    <button class="topbar__nav-item"            id="tb-kanban"      onclick="showView('kanban')">&#9783; Kanban</button>
+    <button class="topbar__nav-item"            id="tb-audit"       onclick="showView('audit')" style="display:none">&#128203; Activity</button>
+    <button class="topbar__nav-item"            id="tb-drivesearch" onclick="showView('drivesearch')">&#128269; Drive</button>
+  </nav>
+  <div class="topbar__spring"></div>
+  <div class="topbar__search-wrap">
+    <svg class="topbar__search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input class="topbar__search" id="topbar-search" type="text" placeholder="Search…" oninput="_topbarSearch(this.value)" autocomplete="off">
+    <span class="topbar__search-hint">&#8984;K</span>
+  </div>
+  <button class="topbar__icon-btn" id="dm-btn" onclick="toggleDarkMode()" title="Toggle dark mode">&#9790;</button>
+  <button class="topbar__icon-btn" id="ms-btn" onclick="window._nassMsLaunch()" title="Open Messenger" style="display:none">&#128172;</button>
+  <button class="topbar__icon-btn" onclick="exportCSV()" title="Export CSV">&#8595;</button>
+  <button class="topbar__icon-btn" id="btn-report" onclick="exportReport()" title="Generate report">&#128196;</button>
+  <button class="topbar__cta" onclick="openModal()">+ Add Record</button>
+  <div class="topbar__user" id="nass-user-wrap" style="display:none">
+    <div class="topbar__avatar" id="nass-user-avatar">?</div>
+    <div class="topbar__user-info">
+      <span id="nass-user-role-badge" class="role-badge" style="display:none"></span>
+      <span id="nass-user-email" class="topbar__user-email"></span>
+    </div>
+    <button class="topbar__signout" onclick="nassLogout()" title="Sign out">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
         <polyline points="16 17 21 12 16 7"/>
         <line x1="21" y1="12" x2="9" y2="12"/>
       </svg>
-      <span class="btn-signout-text">Sign Out</span>
     </button>
   </div>
-</div>
+</header>
 <div id="view-tracker">
   <div class="stats" id="stats"></div>
   <div class="sbar">
