@@ -634,6 +634,30 @@ body.ms-docked .detail-mbox.detail-has-pdf{width:calc(97vw - var(--ms-dock-w));m
   /* ── Users panel ────────────────────────────────────────────── */
   #view-users{padding:16px 12px}
 
+  /* ── Activity log: card layout on mobile ─────────────────────── */
+  #view-audit{padding:14px 10px}
+  #view-audit .tw table{display:block}
+  #view-audit .tw thead{display:none}
+  #view-audit .tw tbody{display:flex;flex-direction:column;gap:8px;padding:0}
+  #view-audit .tw tr{display:grid;grid-template-columns:1fr auto;border:1px solid var(--border-soft);border-radius:8px;background:var(--bg-card);box-shadow:0 1px 3px rgba(0,0,0,0.05);overflow:hidden;margin:0}
+  /* Explicitly hide tracker-shown columns that don't belong in audit cards */
+  #view-audit .tw td:nth-child(2){display:none!important}
+  /* Timestamp top-left (col 1) */
+  #view-audit .tw td:nth-child(1){display:block!important;grid-column:1;grid-row:1;padding:10px 12px 2px;font-size:10px;font-weight:700;color:var(--fg-subtle);letter-spacing:0.04em;white-space:nowrap;background:transparent!important;border:none}
+  /* Badge top-right (col 3) */
+  #view-audit .tw td:nth-child(3){display:flex!important;justify-content:flex-end;align-items:flex-start;grid-column:2;grid-row:1/3;padding:10px 10px 4px;background:transparent!important;border:none}
+  /* Record name (col 4) */
+  #view-audit .tw td:nth-child(4){display:block!important;grid-column:1;grid-row:2;padding:2px 12px 8px;font-size:13px;font-weight:600;color:var(--nass-navy-700);white-space:normal;overflow:visible;text-overflow:clip;background:transparent!important;border:none}
+  /* Before→After footer (col 5) */
+  #view-audit .tw td:nth-child(5){display:block!important;grid-column:1/-1;grid-row:3;padding:6px 12px;font-size:11px;color:var(--fg-muted);border-top:1px solid var(--border-divider)!important;background:var(--bg-subtle)!important}
+  #view-audit .tw td:nth-child(5)::before{content:none!important}
+
+  /* ── Drive search mobile (≤640px fallback) ────────────────────── */
+  .ds-wrap{padding:16px 12px}
+  .ds-search-bar{flex-direction:column}
+  .ds-btn{width:100%}
+  .ds-actions{flex-wrap:wrap}
+
   /* ── Pagination ─────────────────────────────────────────────── */
   .pg-btn{min-width:28px;height:28px;font-size:12px}
   .pg-arrow{min-width:50px;font-size:11px}
@@ -1112,7 +1136,23 @@ body.ms-docked .ms-resize-hdl{display:none!important}
 body.ms-docked #view-tracker,
 body.ms-docked #view-dashboard,
 body.ms-docked #view-kanban,
-body.ms-docked #view-users{margin-right:var(--ms-dock-w);transition:margin-right 0.2s}
+body.ms-docked #view-users,
+body.ms-docked #view-audit,
+body.ms-docked #view-admin,
+body.ms-docked #view-inbox,
+body.ms-docked #view-drivesearch{margin-right:var(--ms-dock-w);transition:margin-right 0.2s}
+/* Docked — inbox sidebar narrows */
+body.ms-docked .gm-side{width:160px}
+/* Docked — admin collapses to 1-col */
+body.ms-docked .adm-grid{grid-template-columns:1fr}
+/* Docked — drive search left pane narrows */
+body.ms-docked .ds-left{width:300px}
+/* Docked — activity log: hide User + Before→After columns to fit */
+body.ms-docked #view-audit .tw th:nth-child(2),
+body.ms-docked #view-audit .tw td:nth-child(2),
+body.ms-docked #view-audit .tw th:nth-child(5),
+body.ms-docked #view-audit .tw td:nth-child(5){display:none!important}
+body.ms-docked .al-td-rec{max-width:180px}
 /* Dock button active state */
 .ms-dock-btn-on{background:rgba(255,255,255,0.32)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5)!important}
 /* ── Split bar (draggable divider between content and chat) ── */
@@ -1297,6 +1337,18 @@ body.dark .ms-thread-empty{color:#526a88!important}
   /* Tighten message bubbles */
   .ms-msg{max-width:88%}
   #ncp-fab{bottom:16px;right:16px;width:50px;height:50px}
+  /* Inbox: hide sidebar, full-width list */
+  .gm-side{display:none!important}
+  .gm-shell{flex-direction:column}
+  /* Inbox mail detail: full-width stacked */
+  .ml-det-toolbar,.ml-det-head{padding:8px 12px}
+  .ml-det-subject{font-size:15px}
+  .ml-det-body{padding:12px;max-height:calc(100vh - 280px)}
+  /* Drive search: stack vertically */
+  .ds-shell{flex-direction:column!important}
+  .ds-left{width:100%!important;border-right:none!important;border-bottom:1px solid var(--border-divider);flex:0 0 auto;height:50vh;max-height:380px;overflow-y:auto}
+  .ds-right{flex:1;min-height:220px}
+  #view-drivesearch{overflow:auto}
 }
 
 /* ── Toast notifications ──────────────────────────────────────── */
