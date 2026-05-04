@@ -68,13 +68,23 @@ var rowIds = [];
   if (typeof applyRolePermissions === 'function') applyRolePermissions();
   if (typeof _mlSubscribeRealtime === 'function') _mlSubscribeRealtime(sb);
 
-  // Request Google Drive token upfront so the popup appears at login,
-  // not mid-session when the user first touches a Drive feature.
+  // Show the Google Drive connect modal right after login.
+  // The button click is the user gesture required to open the OAuth popup
+  // without browsers blocking it as an unsolicited pop-up.
   // GIS is async-deferred so we poll until window.google is ready (max 6s).
   (function _gEarlyAuth(attempts) {
-    if (typeof _gclient === 'function') {
-      var tc = _gclient();
-      if (tc) { tc.requestAccessToken({ prompt: '' }); return; }
+    if (typeof _gclient === 'function' && _gclient()) {
+      var modal = document.getElementById('gdrive-auth-modal');
+      var btn   = document.getElementById('gdrive-auth-btn');
+      if (modal && btn) {
+        modal.style.display = 'flex';
+        btn.onclick = function() {
+          modal.style.display = 'none';
+          var tc = _gclient();
+          if (tc) tc.requestAccessToken({ prompt: '' });
+        };
+      }
+      return;
     }
     if (attempts < 30) setTimeout(function() { _gEarlyAuth(attempts + 1); }, 200);
   })(0);
