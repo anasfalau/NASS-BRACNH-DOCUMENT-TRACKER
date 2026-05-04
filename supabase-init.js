@@ -68,6 +68,17 @@ var rowIds = [];
   if (typeof applyRolePermissions === 'function') applyRolePermissions();
   if (typeof _mlSubscribeRealtime === 'function') _mlSubscribeRealtime(sb);
 
+  // Request Google Drive token upfront so the popup appears at login,
+  // not mid-session when the user first touches a Drive feature.
+  // GIS is async-deferred so we poll until window.google is ready (max 6s).
+  (function _gEarlyAuth(attempts) {
+    if (typeof _gclient === 'function') {
+      var tc = _gclient();
+      if (tc) { tc.requestAccessToken({ prompt: '' }); return; }
+    }
+    if (attempts < 30) setTimeout(function() { _gEarlyAuth(attempts + 1); }, 200);
+  })(0);
+
   // Sync rowIds with current rows
   rowIds = JSON.parse(localStorage.getItem('nassRowIds') || '[]');
   while (rowIds.length < rows.length) rowIds.push(null);
