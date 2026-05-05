@@ -6,8 +6,8 @@
 //    • Offline fallback → serve cached index.html + post message
 // ================================================================
 
-const CACHE   = 'nass-tracker-v23';
-const OFFLINE = 'nass-offline-v23';
+const CACHE   = 'nass-tracker-v24';
+const OFFLINE = 'nass-offline-v24';
 
 const APP_SHELL = [
   './',
@@ -19,7 +19,6 @@ const APP_SHELL = [
   './supabase-init.js',
   './NN-logo.png',
   './NN-logo-transparent.png',
-  './logo.png',
 ];
 
 // ── Install: pre-cache app shell ──────────────────────────────────
