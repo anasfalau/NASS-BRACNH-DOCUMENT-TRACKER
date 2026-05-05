@@ -177,6 +177,20 @@ var rowIds = [];
 // Tracks UUIDs removed locally so pushData can DELETE them without an extra SELECT.
 var _nassDeletedIds = new Set();
 
+// In-memory snapshot of last successfully-pushed row state, keyed by UUID.
+// Used by pushData to skip UPSERTs for unchanged rows (~300× bandwidth cut at N=319).
+// Empty on reload → first save after reload is a full upsert (self-healing).
+// Rebuilt by pullData so peer changes don't make every row look dirty.
+var _pushSnapshot = new Map();
+function _recKey(rec) {
+  // Stable, order-fixed key. Excludes updated_at / updated_by which always change.
+  return JSON.stringify([
+    rec.sort_order, rec.file_ref, rec.subject, rec.location, rec.officer,
+    rec.last_action, rec.date_received, rec.date_moved, rec.sla, rec.due_date,
+    rec.status, rec.delay_flag, rec.remarks
+  ]);
+}
+
 // ── Proxy helper ────────────────────────────────────────────────
 function applyRowsProxy() {
   rows = new Proxy(rows, {
@@ -245,6 +259,26 @@ async function pullData(sb) {
     ]);
     localStorage.setItem('nassRows',   JSON.stringify(newRows));
     localStorage.setItem('nassRowIds', JSON.stringify(records.map(r => r.id)));
+    // Rebuild push-snapshot from server state so the next save only uploads
+    // rows the user actually changed locally (not everything we just pulled).
+    _pushSnapshot.clear();
+    records.forEach((rec, i) => {
+      _pushSnapshot.set(rec.id, _recKey({
+        sort_order:    i,
+        file_ref:      rec.file_ref      || '',
+        subject:       rec.subject       || '',
+        location:      rec.location      || '',
+        officer:       rec.officer       || '',
+        last_action:   rec.last_action   || '',
+        date_received: rec.date_received || '',
+        date_moved:    rec.date_moved    || '',
+        sla:           rec.sla           || '',
+        due_date:      rec.due_date      || '',
+        status:        rec.status        || 'Active',
+        delay_flag:    rec.delay_flag    || 'ON TIME',
+        remarks:       rec.remarks       || ''
+      }));
+    });
   } else {
     await migrateFromSettings(sb);
   }
@@ -328,11 +362,15 @@ async function pushData(sb) {
       updated_at:    now
     };
     if (rowIds[i]) {
-      toUpsert.push({ ...rec, id: rowIds[i] });
+      // Dirty check — only push rows whose stable fields changed since last push
+      if (_pushSnapshot.get(rowIds[i]) !== _recKey(rec)) {
+        toUpsert.push({ ...rec, id: rowIds[i] });
+      }
     } else {
       toInsert.push({ index: i, rec });
     }
   });
+  console.log('[NASS] pushData:', toInsert.length, 'inserts,', toUpsert.length, 'upserts (skipped', curRows.length - toInsert.length - toUpsert.length, 'unchanged)');
 
   // INSERT new records and capture their UUIDs
   if (toInsert.length) {
@@ -344,6 +382,10 @@ async function pushData(sb) {
       console.error('[NASS] Insert error:', insErr.message);
     } else if (ins) {
       ins.forEach(rec => { rowIds[rec.sort_order] = rec.id; });
+      // Snapshot newly inserted rows so next save sees them as clean
+      toInsert.forEach(({ index, rec: insRec }) => {
+        if (rowIds[index]) _pushSnapshot.set(rowIds[index], _recKey(insRec));
+      });
     }
   }
 
@@ -352,7 +394,12 @@ async function pushData(sb) {
     const { error: upErr } = await sb
       .from('nass_records')
       .upsert(toUpsert, { onConflict: 'id' });
-    if (upErr) console.error('[NASS] Upsert error:', upErr.message);
+    if (upErr) {
+      console.error('[NASS] Upsert error:', upErr.message);
+      // Leave snapshot stale on failure → next save retries these rows
+    } else {
+      toUpsert.forEach(rec => _pushSnapshot.set(rec.id, _recKey(rec)));
+    }
   }
 
   // Save updated rowIds (with newly assigned UUIDs)
@@ -364,7 +411,10 @@ async function pushData(sb) {
     const toDelete = [..._nassDeletedIds];
     const { error: delErr } = await sb.from('nass_records').delete().in('id', toDelete);
     if (delErr) console.error('[NASS] Delete error:', delErr.message);
-    else _nassDeletedIds.clear();
+    else {
+      toDelete.forEach(id => _pushSnapshot.delete(id));
+      _nassDeletedIds.clear();
+    }
   }
 
   // Push config lists to nass_settings
