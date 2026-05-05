@@ -844,11 +844,14 @@ function gdriveSearchForRecord(subject,recordId){
   var mbox=document.querySelector('.detail-mbox');
   var subjectEl=document.getElementById('d-subject');
   if(!panel)return;
-  // Reset state
+  // Reset state — also explicitly hide the spinner so a cache hit never
+  // races with a stale 'flex' from a prior search still in flight.
   if(frame){frame.src='';frame.style.display='none';}
   if(titleEl)titleEl.textContent='';
+  if(loading)loading.style.display='none';
   if(subjectEl){subjectEl.removeAttribute('href');subjectEl.classList.remove('detail-subject-linked');}
   function renderHit(fid,name,wvl){
+    if(loading)loading.style.display='none';
     if(titleEl)titleEl.textContent=(name||'').replace(/\.pdf$/i,'');
     var url=wvl||'#';
     if(openLink)openLink.href=url;
@@ -858,6 +861,7 @@ function gdriveSearchForRecord(subject,recordId){
     if(mbox)mbox.classList.add('detail-has-pdf');
   }
   function renderMiss(){
+    if(loading)loading.style.display='none';
     panel.style.display='none';
     if(mbox)mbox.classList.remove('detail-has-pdf');
   }
