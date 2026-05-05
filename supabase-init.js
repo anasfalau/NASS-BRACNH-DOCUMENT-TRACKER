@@ -111,9 +111,18 @@ var rowIds = [];
     config: { broadcast: { self: false } }
   });
 
-  nassChannel.on('broadcast', { event: 'data-changed' }, async function () {
-    await pullData(sb);
-    if (typeof loadData === 'function') loadData();
+  nassChannel.on('broadcast', { event: 'data-changed' }, async function (msg) {
+    const p = (msg && msg.payload) || {};
+    const ids = Array.isArray(p.ids) ? p.ids : [];
+    const deleted = Array.isArray(p.deleted) ? p.deleted : [];
+    if (ids.length || deleted.length) {
+      // Delta path — patch only the affected rows; proxy stays intact (no loadData needed)
+      await pullDelta(sb, ids, deleted);
+    } else {
+      // Legacy senders (or config-only changes) — full pull
+      await pullData(sb);
+      if (typeof loadData === 'function') loadData();
+    }
     if (!isModalOpen() && typeof refresh === 'function') refresh();
   });
 
@@ -132,10 +141,17 @@ var rowIds = [];
   // Wrap saveData: write to localStorage → push to Supabase → notify peers
   const _origSave = window.saveData;
   window.saveData = async function () {
-    _origSave();                  // synchronous localStorage write
-    await pushData(sb);           // push to Supabase (awaited so errors surface)
+    _origSave();                                          // synchronous localStorage write
+    const result = await pushData(sb);                    // push (awaited so errors surface)
+    const { changedIds = [], deletedIds = [] } = result || {};
     try {
-      await nassChannel.send({ type: 'broadcast', event: 'data-changed', payload: {} });
+      // Empty payload = config-only change → peers fall back to full pullData.
+      // Non-empty = delta path → peers patch only the named rows.
+      await nassChannel.send({
+        type: 'broadcast',
+        event: 'data-changed',
+        payload: { ids: changedIds, deleted: deletedIds }
+      });
     } catch (e) {
       console.warn('[NASS] Broadcast send failed:', e);
     }
@@ -340,8 +356,10 @@ async function pushData(sb) {
   const now       = new Date().toISOString();
   const curRows   = JSON.parse(localStorage.getItem('nassRows') || '[]');
 
-  const toInsert = [];  // { index, rec }
-  const toUpsert = [];  // rec (has id)
+  const toInsert = [];   // { index, rec }
+  const toUpsert = [];   // rec (has id)
+  const changedIds = []; // UUIDs successfully inserted or upserted (for delta broadcast)
+  let deletedIds = [];   // UUIDs successfully deleted (for delta broadcast)
 
   curRows.forEach((r, i) => {
     const rec = {
@@ -381,7 +399,7 @@ async function pushData(sb) {
     if (insErr) {
       console.error('[NASS] Insert error:', insErr.message);
     } else if (ins) {
-      ins.forEach(rec => { rowIds[rec.sort_order] = rec.id; });
+      ins.forEach(rec => { rowIds[rec.sort_order] = rec.id; changedIds.push(rec.id); });
       // Snapshot newly inserted rows so next save sees them as clean
       toInsert.forEach(({ index, rec: insRec }) => {
         if (rowIds[index]) _pushSnapshot.set(rowIds[index], _recKey(insRec));
@@ -398,7 +416,10 @@ async function pushData(sb) {
       console.error('[NASS] Upsert error:', upErr.message);
       // Leave snapshot stale on failure → next save retries these rows
     } else {
-      toUpsert.forEach(rec => _pushSnapshot.set(rec.id, _recKey(rec)));
+      toUpsert.forEach(rec => {
+        _pushSnapshot.set(rec.id, _recKey(rec));
+        changedIds.push(rec.id);
+      });
     }
   }
 
@@ -414,6 +435,7 @@ async function pushData(sb) {
     else {
       toDelete.forEach(id => _pushSnapshot.delete(id));
       _nassDeletedIds.clear();
+      deletedIds = toDelete;
     }
   }
 
@@ -430,6 +452,75 @@ async function pushData(sb) {
       .upsert(payload, { onConflict: 'key' });
     if (cfgErr) console.error('[NASS] Config push error:', cfgErr.message);
   }
+
+  return { changedIds, deletedIds };
+}
+
+// ── pullDelta ──────────────────────────────────────────────────
+// Patch only the rows specified by ids/deleted (received via broadcast payload).
+// Avoids the full-table SELECT in pullData when a peer changed just a few rows.
+async function pullDelta(sb, ids, deleted) {
+  // Apply deletes first — peer-driven, must NOT be re-queued for our own delete.
+  if (deleted && deleted.length) {
+    deleted.forEach(did => {
+      const idx = rowIds.indexOf(did);
+      if (idx >= 0) {
+        rows.splice(idx, 1);          // proxy adds did to _nassDeletedIds
+        _nassDeletedIds.delete(did);  // undo: peer already deleted server-side
+        _pushSnapshot.delete(did);
+      }
+    });
+  }
+  // Apply updates / peer-inserted rows
+  if (ids && ids.length) {
+    const { data, error } = await sb.from('nass_records').select('*').in('id', ids);
+    if (error) { console.error('[NASS] Delta fetch error:', error.message); return; }
+    (data || []).forEach(rec => {
+      const newRow = [
+        '',
+        rec.file_ref      || '',
+        rec.subject       || '',
+        rec.location      || '',
+        rec.officer       || '',
+        rec.last_action   || '',
+        rec.date_received || '',
+        rec.date_moved    || '',
+        rec.sla           || '',
+        rec.due_date      || '',
+        rec.status        || 'Active',
+        rec.delay_flag    || 'ON TIME',
+        rec.remarks       || '',
+        rec.updated_by    || '',
+        rec.updated_at    || ''
+      ];
+      const idx = rowIds.indexOf(rec.id);
+      if (idx >= 0) {
+        rows[idx] = newRow;           // in-place; proxy set trap is a no-op pass-through
+      } else {
+        rows.push(newRow);            // proxy: rowIds.push(null)
+        rowIds[rows.length - 1] = rec.id;  // overwrite the null
+      }
+      // Snapshot must reflect server state so a no-op local save doesn't re-push this row
+      _pushSnapshot.set(rec.id, _recKey({
+        sort_order:    rowIds.indexOf(rec.id),
+        file_ref:      rec.file_ref      || '',
+        subject:       rec.subject       || '',
+        location:      rec.location      || '',
+        officer:       rec.officer       || '',
+        last_action:   rec.last_action   || '',
+        date_received: rec.date_received || '',
+        date_moved:    rec.date_moved    || '',
+        sla:           rec.sla           || '',
+        due_date:      rec.due_date      || '',
+        status:        rec.status        || 'Active',
+        delay_flag:    rec.delay_flag    || 'ON TIME',
+        remarks:       rec.remarks       || ''
+      }));
+    });
+  }
+  // Persist updated rows + rowIds so a reload sees them
+  localStorage.setItem('nassRows',   JSON.stringify(rows));
+  localStorage.setItem('nassRowIds', JSON.stringify(rowIds));
 }
 
 // ── Google Drive token persistence ─────────────────────────────
